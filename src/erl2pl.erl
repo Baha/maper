@@ -1,6 +1,8 @@
 -module(erl2pl).
 -export([main/1]).
 
+-include("include/maper_macros.hrl")
+
 main(File) ->
   case compile:file(File, [to_core, binary, no_copt]) of
     {ok, ModuleName, CoreForms} ->
