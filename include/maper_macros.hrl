@@ -7,7 +7,6 @@
 
 -define(INT_ATOM,    "int").
 -define(ATOM_ATOM,   "atom").
--define(PAIR_ATOM,   "pair").
 -define(MODULE_ATOM, "module").
 -define(FUN_ATOM,    "fun").
 -define(LIT_ATOM,    "lit").
@@ -20,7 +19,8 @@
 -define(CLAUSE_ATOM, "clause").
 -define(APPLY_ATOM,  "apply").
 -define(CALL_ATOM,   "call").
--define(PRIMOP_ATOM, "primop").  
+-define(PRIMOP_ATOM, "primop").
+-define(FUNDEF_ATOM, "fundef").
 
 -define(INT_PRED(Int),
   ?INT_ATOM ++ ?ARG_START ++
@@ -29,11 +29,6 @@
 -define(ATOM_PRED(Atom),
   ?ATOM_ATOM ++ ?ARG_START ++
   Atom ++ ?ARG_END).
-
--define(PAIR_PRED(Elem1, Elem2),
-  ?PAIR_ATOM ++ ?ARG_START ++
-  Elem1 ++ ?ARG_SEP ++
-  Elem2 ++ ?ARG_END).
 
 -define(MODULE_PRED(Name, Defs),
   ?MODULE_ATOM ++ ?ARG_START ++
@@ -98,3 +93,9 @@
   ?PRIMOP_ATOM ++ ?ARG_START ++
   Op   ++ ?ARG_SEP ++
   Args ++ ?ARG_END).
+
+-define(FUNDEF_PRED(Module, Name, Body),
+  ?FUNDEF_ATOM ++ ?ARG_START ++
+  Module   ++ ?ARG_SEP ++
+  Name     ++ ?ARG_SEP ++
+  Body     ++ ?ARG_END).

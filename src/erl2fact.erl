@@ -6,15 +6,30 @@
 main(File) ->
   case compile:file(File, [to_core, binary, no_copt]) of
     {ok, _ModuleName, CoreForms} ->
-        FactForms = cerl2fact(CoreForms),
+        FactDefs = cerl2fact_mod(CoreForms),
         %CoreName = atom_to_list(ModuleName) ++ ".txt",
         % file:write_file(CoreName,
-        io:fwrite("~s.~n", [FactForms]);
+        [io:fwrite("~s.~n~n", [FactDef]) || FactDef <- FactDefs];
     _ ->
       io:fwrite("Error: Could not compile file.~n"),
       exit(file_error)
   end.
 
+cerl2fact_mod(Node) ->
+  CoreModuleName = cerl:module_name(Node),
+  CoreModuleDefs =
+    [{FName, FDef} || {FName, FDef} <- cerl:module_defs(Node),
+                     element(1,cerl:var_name(FName)) =/= 'module_info'],
+  FactModuleDefs = [{CoreModuleName, FName, FDef} ||
+                    {FName, FDef} <- CoreModuleDefs],
+  FactFunDefs = [cerl2fact_fundef(FunDef) || FunDef <- FactModuleDefs],
+  FactFunDefs.
+
+cerl2fact_fundef({ModName, FunName, FunBody}) ->
+  FactModuleName = cerl2fact(ModName),
+  FactFunName    = cerl2fact(FunName),
+  FactFunBody    = cerl2fact(FunBody),
+  ?FUNDEF_PRED(FactModuleName, FactFunName, FactFunBody).
 
 cerl2fact(Node) when is_integer(Node) ->
   FactInt = integer_to_list(Node),
@@ -28,21 +43,9 @@ cerl2fact(Node) when is_list(Node) ->
   FactList = [cerl2fact(CoreElem) || CoreElem <- Node],
   ?LIST_START ++ string:join(FactList, ?LIST_SEP) ++ ?LIST_END;
 
-cerl2fact({CoreElem1,CoreElem2}) ->
-  FactElem1 = cerl2fact(CoreElem1),
-  FactElem2 = cerl2fact(CoreElem2),
-  ?PAIR_PRED(FactElem1, FactElem2);
-
 cerl2fact(Node) ->
   case cerl:type(Node) of
-    module ->
-      CoreModuleName = cerl:module_name(Node),
-      CoreModuleDefs =
-        [{FName, FDef} || {FName, FDef} <- cerl:module_defs(Node),
-                         element(1,cerl:var_name(FName)) =/= 'module_info'],
-      FactModuleName = cerl2fact(CoreModuleName),
-      FactModuleDefs = cerl2fact(CoreModuleDefs),
-      ?MODULE_PRED(FactModuleName, FactModuleDefs);
+
     'fun' ->
       CoreFunVars = cerl:fun_vars(Node),
       CoreFunBody = cerl:fun_body(Node),
