@@ -17,19 +17,21 @@ init(Mod,Fun,Args,Env,App) :-
   Env = (top,Binds),
   App = apply(var(Fun,NArgs),Pars).
 
-
-run(Mod,Fun,Args,Env2,Exp) :-
+%% run(mod,fun,args,final_env,final_exp)
+%% evaluates fun (from mod) application and
+%% returns the final environment and expression
+run(Mod,Fun,Args,FEnv,FExp) :-
   consult(tmp),
-  init(Mod,Fun,Args,Env,App),
-  tr(cf(Env,App),cf(Env2,Exp)).
+  init(Mod,Fun,Args,IEnv,IApp),
+  tr(cf(IEnv,IApp),cf(FEnv,FExp)).
 
 %% (Error)
 tr(cf(Env,Exp),cf(Env,Exp)) :-
-  Env = (bot,_Binds).
+  Env = (bot,_).
 
 %% (Lit)
 tr(cf(Env,lit(Lit)),cf(Env,lit(Lit))) :-
-  Env = (top,_Binds).
+  Env = (top,_).
 
 %% (Var)
 tr(cf(Env,var(Var)),cf(Env,Val)) :-
@@ -37,37 +39,62 @@ tr(cf(Env,var(Var)),cf(Env,Val)) :-
   var_lookup(Var,Binds,Val).
 
 %% (Cons)
-tr(cf(Env,cons(Exp1,Exp2)),cf(Env2,Exp)) :-
-  Env = (top,_),
-  tr(cf(Env,Exp1),cf(Env1,RExp1)),
-  tr(cf(Env1,Exp2),cf(Env2,RExp2)),
-  ite(Env2,cons(RExp1,RExp2),Exp).
+tr(cf(IEnv,cons(IExp1,IExp2)),cf(FEnv,Exp)) :-
+  IEnv = (top,_),
+  tr(cf(IEnv,IExp1),cf(MEnv,FExp1)),
+  tr(cf(MEnv,IExp2),cf(FEnv,FExp2)),
+  ite(FEnv,cons(FExp1,FExp2),Exp).
+
+%% (Tuple)
+tr(cf(IEnv,tuple(IExps)),cf(FEnv,Exp)) :-
+  IEnv = (top,_),
+  tr_list(IEnv,IExps,FEnv,FExps),
+  ite(FEnv,tuple(FExps),Exp).
+
+%% (Let)
+tr(cf(IEnv,let(Vars,IExp1,IExp2)),cf(FEnv,Exp)) :-
+  IEnv = (top,_),
+  tr(cf(IEnv,IExp1),cf(MEnv,FExp1)),
+  MEnv = (Error,MBinds),
+  append(MBinds,(Vars,FExp1),LBinds),
+  LEnv = (Error,LBinds),
+  tr(cf(LEnv,IExp2),cf(FEnv,FExp2)),
+  ite(FEnv,FExp2,Exp).
+
+%% (Case)
+tr(cf(IEnv,case(IExp,Clauses)),cf(FEnv,Exp)) :-
+  IEnv = (top,_),
+  tr(cf(IEnv,IExp),cf(MEnv,MExp)),
+  % TODO: Implement match rule
+  match(MEnv,MExp,Clauses,NEnv,NExp),
+  tr(cf(NEnv,NExp),cf(FEnv,FExp)),
+  ite(FEnv,FExp,Exp).
 
 %% (Apply)
-tr(cf(Env,apply(Fname,Exprs)),cf(LEnv2,Exp)) :-
-  Env = (top,_),
+tr(cf(IEnv,apply(FName,IExps)),cf(FEnv2,Exp)) :-
+  IEnv = (top,_),
   % TODO: Pass module here
-  fun_lookup(lit(atom(any)),Fname,FunDef),
-  FunDef = fun(Pars,Body),
-  tr_list(Env,Exprs,LEnv,LExprs),
-  zip_binds(Pars,LExprs,Zips),
-  LEnv = (Error,LBinds),
-  append(LBinds,Zips,NewBinds),
-  tr(cf((Error,NewBinds),Body),cf(LEnv2,Body2)),
-  ite(LEnv2,Body2,Exp).
+  fun_lookup(lit(atom(any)),FName,FunDef),
+  FunDef = fun(Pars,FunBody),
+  tr_list(IEnv,IExps,FEnv,FExps),
+  zip_binds(Pars,FExps,AppBinds),
+  FEnv = (Error,FBinds),
+  append(FBinds,AppBinds,FullBinds),
+  tr(cf((Error,FullBinds),FunBody),cf(FEnv2,FExp)),
+  ite(FEnv2,FExp,Exp).
 
-tr_list(Env1,[],Env1,[]).
-tr_list(Env1,[Exp|Exps],Env3,[Exp2|Exps2]) :-
-  tr(cf(Env1,Exp),cf(Env2,Exp2)),
-  tr_list(Env2,Exps,Env3,Exps2).
+tr_list(IEnv,[],IEnv,[]).
+tr_list(IEnv,[IExp|IExps],FEnv,[FExp|FExps]) :-
+  tr(cf(IEnv,IExp),cf(NEnv,FExp)),
+  tr_list(NEnv,IExps,FEnv,FExps).
 
 zip_binds([],[],[]).
-zip_binds([X|Xs],[Y|Ys],[(X,Y)|Rest]) :-
-  zip_binds(Xs,Ys,Rest).
+zip_binds([Var|Vars],[Val|Vals],[(Var,Val)|RBinds]) :-
+  zip_binds(Vars,Vals,RBinds).
 
 %% ite(env,exp_in,exp_out)
 %% outputs error if env contains bottom, and exp_in otherwise
 ite(Env, _, error) :-
   Env = (bot,_).
-ite(Env,Exp1,Exp1) :-
+ite(Env,Exp,Exp) :-
   Env = (top,_).
