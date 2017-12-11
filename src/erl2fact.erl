@@ -4,7 +4,7 @@
 -include("include/maper_macros.hrl").
 
 main(File) ->
-  case compile:file(File, [to_core, binary, no_copt]) of
+  case compile:file(File, [to_core, binary]) of
     {ok, _ModuleName, CoreForms} ->
         FactDefs = cerl2fact_mod(CoreForms),
         %CoreName = atom_to_list(ModuleName) ++ ".txt",
@@ -43,9 +43,11 @@ cerl2fact(Node) when is_list(Node) ->
   FactList = [cerl2fact(CoreElem) || CoreElem <- Node],
   ?LIST_START ++ string:join(FactList, ?LIST_SEP) ++ ?LIST_END;
 
+% TODO: Handle metavalue in this case
+cerl2fact({function_clause}) -> "function_clause";
+
 cerl2fact(Node) ->
   case cerl:type(Node) of
-
     'fun' ->
       CoreFunVars = cerl:fun_vars(Node),
       CoreFunBody = cerl:fun_body(Node),
