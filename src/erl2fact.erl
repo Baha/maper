@@ -4,7 +4,7 @@
 -include("include/maper_macros.hrl").
 
 main(File) ->
-  case compile:file(File, [to_core, binary]) of
+  case compile:file(File, [to_core, binary, no_copt]) of
     {ok, _ModuleName, CoreForms} ->
         FactDefs = cerl2fact_mod(CoreForms),
         %CoreName = atom_to_list(ModuleName) ++ ".txt",
