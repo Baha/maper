@@ -4,6 +4,8 @@
 -define(LIST_SEP,   ",").
 -define(LIST_START, "[").
 -define(LIST_END,   "]").
+-define(SQUOTE_START, "'").
+-define(SQUOTE_END, "'").
 
 -define(INT_ATOM,    "int").
 -define(ATOM_ATOM,   "atom").
@@ -28,7 +30,8 @@
 
 -define(ATOM_PRED(Atom),
   ?ATOM_ATOM ++ ?ARG_START ++
-  Atom ++ ?ARG_END).
+  ?SQUOTE_START ++ Atom ++ ?SQUOTE_END
+  ++ ?ARG_END).
 
 -define(MODULE_PRED(Name, Defs),
   ?MODULE_ATOM ++ ?ARG_START ++
@@ -46,7 +49,12 @@
 
 -define(VAR_PRED(Var),
   ?VAR_ATOM ++ ?ARG_START ++
-  Var ++ ?ARG_END).
+  ?SQUOTE_START ++ Var ++ ?SQUOTE_END ++ ?ARG_END).
+
+-define(VAR_PRED_PAIR(Atom, Int),
+  ?VAR_ATOM ++ ?ARG_START ++
+  ?SQUOTE_START ++ Atom ++ ?SQUOTE_END ++ ?ARG_SEP ++
+  Int ++ ?ARG_END).
 
 -define(CONS_PRED(Hd, Tl),
   ?CONS_ATOM ++ ?ARG_START ++

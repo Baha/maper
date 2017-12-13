@@ -60,14 +60,15 @@ cerl2fact(Node) ->
       ?LIT_PRED(FactConcrete);
     var ->
       CoreVarName = cerl:var_name(Node),
-      FactVarName = 
-        case CoreVarName of
-          {ErlAtom,ErlInt} ->
-            atom_to_list(ErlAtom) ++ "," ++ integer_to_list(ErlInt);
-          _ ->
-            atom_to_list(CoreVarName)
-        end,
-      ?VAR_PRED(FactVarName);
+      case CoreVarName of
+        {ErlAtom,ErlInt} ->
+          FactAtom = atom_to_list(ErlAtom),
+          FactInt  = integer_to_list(ErlInt),
+          ?VAR_PRED_PAIR(FactAtom,FactInt);
+        _ ->
+          FactVarName = atom_to_list(CoreVarName),
+          ?VAR_PRED(FactVarName)
+        end;
     cons ->
       CoreConsHead = cerl:cons_hd(Node),
       CoreConsTail = cerl:cons_tl(Node),
