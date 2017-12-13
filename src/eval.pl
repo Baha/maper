@@ -1,11 +1,4 @@
-
-fun_lookup(_,Fun,FunDef) :-
-  fundef(_,Fun,FunDef).
-  % change pred to moddef
-
-init_binds([],[]).
-init_binds([Par|RPars],[(Par,_)|RPars1]) :-
-  init_binds(RPars,RPars1).
+:- include('match').
 
 init(Mod,Fun,Args,Env,App) :-
   % obtain arity from Args
@@ -88,52 +81,3 @@ tr_list(IEnv,[],IEnv,[]).
 tr_list(IEnv,[IExp|IExps],FEnv,[FExp|FExps]) :-
   tr(cf(IEnv,IExp),cf(NEnv,FExp)),
   tr_list(NEnv,IExps,FEnv,FExps).
-
-zip_binds([],[],[]).
-zip_binds([Var|Vars],[Val|Vals],[(Var,Val)|RBinds]) :-
-  zip_binds(Vars,Vals,RBinds).
-
-%% ite(env,exp_in,exp_out)
-%% outputs error if env contains bottom, and exp_in otherwise
-ite(Env, _, error) :-
-  Env = (bot,_).
-ite(Env,Exp,Exp) :-
-  Env = (top,_).
-
-
-format_values(values(Exps),Exps).
-format_values(Exp,[Exp]).
-
-match(IEnv,IExps,_,IEnv,IExps) :-
-  IEnv = (bot,_).
-match(IEnv,IExps,Clauses,JEnv,CExp) :-
-  IEnv = (top,IBinds),
-  match_list(IEnv,IExps,Clauses,CEnv,CExp),
-  CEnv = (Error,CBinds),
-  append(IBinds,CBinds,JBinds),
-  JEnv = (Error,JBinds).
-
-match_list(Env,Exps,[Clause|_],CEnv,CExp) :-
-  match_clause(Env,Exps,Clause,CEnv,CExp,true).
-match_list(Env,Exps,[Clause|Clauses],CEnv,CExp) :-
-  match_clause(Env,Exps,Clause,_,_,false),
-  match_list(Env,Exps,Clauses,CEnv,CExp).
-
-match_clause(IEnv,IExps,clause(Pats,_,Body),CEnv,Body,true) :-
-  match_pats(IEnv,IExps,Pats,CEnv,true).
-  %% CEnv = (top,CBinds),
-  %% match_guard(CBinds,Guard,true).
-%%
-%% TODO: Not assume guards are always true
-%% match_guard(_,_,true).
-
-match_pats(Env,[],[],Env,true).
-match_pats(Env,[Exp|Exps],[Pat|Pats],FEnv,Res) :-
-  match_pat(Env,Exp,Pat,NEnv,true),
-  match_pats(NEnv,Exps,Pats,FEnv,Res).
-
-
-match_pat(Env,lit(X),lit(X),Env,true).
-%% match_pat(Env,Val,var(Var),Env,true) :-
-%%   var_lookup(Var,Env)
-match_pat(Env,_,_,Env,false).
