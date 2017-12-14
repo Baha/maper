@@ -27,7 +27,7 @@ match_pats(Env,[],[],Env,true).
 match_pats(Env,[Exp|Exps],[Pat|Pats],FEnv,Res) :-
   match_pat(Env,Exp,Pat,NEnv,true),
   match_pats(NEnv,Exps,Pats,FEnv,Res).
-match_pats(Env,[Exp|Exps],[Pat|Pats],FEnv,false) :-
+match_pats(Env,[Exp|_],[Pat|_],FEnv,false) :-
   match_pat(Env,Exp,Pat,FEnv,false).
 
 

@@ -72,15 +72,18 @@ tr(cf(IEnv,apply(FName,IExps)),cf(FEnv2,Exp)) :-
   IEnv = (top,_),
   % TODO: Pass module here
   fun_lookup(lit(atom(any)),FName,FunDef),
-  write(FunDef),
-  rename_fun(FunDef,RFunDef),
-  write(RFunDef),
-  RFunDef = fun(RPars,RFunBody),
+  %% write(FunDef),
+  %% rename_fun(FunDef,RFunDef),
+  %% write(RFunDef),
+  %% RFunDef = fun(RPars,RFunBody),
+  FunDef = fun(Pars,FunBody),
   tr_list(IEnv,IExps,FEnv,FExps),
-  zip_binds(RPars,FExps,AppBinds),
+  %% zip_binds(RPars,FExps,AppBinds),
+  zip_binds(Pars,FExps,AppBinds),
   FEnv = (Error,FBinds),
   append(FBinds,AppBinds,FullBinds),
-  tr(cf((Error,FullBinds),RFunBody),cf(FEnv2,FExp)),
+  %% tr(cf((Error,FullBinds),RFunBody),cf(FEnv2,FExp)),
+  tr(cf((Error,FullBinds),FunBody),cf(FEnv2,FExp)),
   ite(FEnv2,FExp,Exp).
 
 tr_list(IEnv,[],IEnv,[]).
