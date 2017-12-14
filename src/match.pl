@@ -27,9 +27,17 @@ match_pats(Env,[],[],Env,true).
 match_pats(Env,[Exp|Exps],[Pat|Pats],FEnv,Res) :-
   match_pat(Env,Exp,Pat,NEnv,true),
   match_pats(NEnv,Exps,Pats,FEnv,Res).
+match_pats(Env,[Exp|Exps],[Pat|Pats],FEnv,false) :-
+  match_pat(Env,Exp,Pat,FEnv,false).
 
 
 match_pat(Env,lit(X),lit(X),Env,true).
-%% match_pat(Env,Val,var(Var),Env,true) :-
-%%   var_lookup(Var,Env).
-match_pat(Env,_,_,Env,false).
+match_pat(Env,Val,var(Var),Env,true) :-
+  var_lookup(Var,Env,Val).
+match_pat(Env,Val,var(Var),NEnv,true) :-
+  var_lookup(Var,Env,undef),
+  Env = (Error,Binds),
+  append(Binds,[(Var,Val)],NBinds),
+  NEnv = (Error,NBinds).
+match_pat(_,_,var(_),_,false).
+%match_pat(Env,_,_,Env,false).

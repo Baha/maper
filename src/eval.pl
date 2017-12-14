@@ -1,6 +1,9 @@
 :- include('match').
 
+:- dynamic(fresh_nums/1).
+
 init(Mod,Fun,Args,Env,App) :-
+  assertz(fresh_nums([0])),
   % obtain arity from Args
   % Add smart init? i.e., checks num args
   length(Args,NArgs),
@@ -69,12 +72,15 @@ tr(cf(IEnv,apply(FName,IExps)),cf(FEnv2,Exp)) :-
   IEnv = (top,_),
   % TODO: Pass module here
   fun_lookup(lit(atom(any)),FName,FunDef),
-  FunDef = fun(Pars,FunBody),
+  write(FunDef),
+  rename_fun(FunDef,RFunDef),
+  write(RFunDef),
+  RFunDef = fun(RPars,RFunBody),
   tr_list(IEnv,IExps,FEnv,FExps),
-  zip_binds(Pars,FExps,AppBinds),
+  zip_binds(RPars,FExps,AppBinds),
   FEnv = (Error,FBinds),
   append(FBinds,AppBinds,FullBinds),
-  tr(cf((Error,FullBinds),FunBody),cf(FEnv2,FExp)),
+  tr(cf((Error,FullBinds),RFunBody),cf(FEnv2,FExp)),
   ite(FEnv2,FExp,Exp).
 
 tr_list(IEnv,[],IEnv,[]).
