@@ -81,9 +81,7 @@ tr(cf(IEnv,apply(FName,IExps)),cf(FEnv2,Exp)) :-
   %% zip_binds(RPars,FExps,AppBinds),
   zip_binds(Pars,FExps,AppBinds),
   FEnv = (Error,FBinds),
-  append(FBinds,AppBinds,FullBinds),
-  %% tr(cf((Error,FullBinds),RFunBody),cf(FEnv2,FExp)),
-  tr(cf((Error,FullBinds),FunBody),cf(FEnv2,FExp)),
+  tr(cf((Error,AppBinds),FunBody),cf(FEnv2,FExp)),
   ite(FEnv2,FExp,Exp).
 
 %% (Call1)
