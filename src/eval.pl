@@ -3,13 +3,10 @@
 :- dynamic(fresh_nums/1).
 
 init(Mod,Fun,Args,Env,App) :-
-  assertz(fresh_nums([0])),
-  % obtain arity from Args
-  % Add smart init? i.e., checks num args
   length(Args,NArgs),
   fun_lookup(lit(atom(Mod)),var(Fun,NArgs),FunDef),
   FunDef = fun(Pars,_),
-  init_binds(Pars,Binds),
+  zip_binds(Pars,Args,Binds),
   Env = (top,Binds),
   App = apply(var(Fun,NArgs),Pars).
 
@@ -62,25 +59,19 @@ tr(cf(IEnv,case(IExp,Clauses)),cf(FEnv,Exp)) :-
   IEnv = (top,_),
   format_values(IExp,VExps),
   tr_list(IEnv,VExps,MEnv,MExps),
-  % TODO: Implement match rule
   match(MEnv,MExps,Clauses,NEnv,NExp),
   tr(cf(NEnv,NExp),cf(FEnv,FExp)),
   ite(FEnv,FExp,Exp).
 
 %% (Apply)
-tr(cf(IEnv,apply(FName,IExps)),cf(FEnv2,Exp)) :-
+tr(cf(IEnv,apply(FName,IExps)),cf(FEnv,Exp)) :-
   IEnv = (top,_),
   % TODO: Pass module here
   fun_lookup(lit(atom(any)),FName,FunDef),
-  %% write(FunDef),
-  %% rename_fun(FunDef,RFunDef),
-  %% write(RFunDef),
-  %% RFunDef = fun(RPars,RFunBody),
   FunDef = fun(Pars,FunBody),
   tr_list(IEnv,IExps,FEnv,FExps),
-  %% zip_binds(RPars,FExps,AppBinds),
   zip_binds(Pars,FExps,AppBinds),
-  FEnv = (Error,FBinds),
+  FEnv = (Error,_),
   tr(cf((Error,AppBinds),FunBody),cf(FEnv2,FExp)),
   ite(FEnv2,FExp,Exp).
 
