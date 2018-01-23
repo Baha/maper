@@ -35,10 +35,12 @@ match_pats(Env,[Exp|_],[Pat|_],FEnv,false) :-
 
 match_pat(Env,lit(X),lit(X),Env,true).
 match_pat(Env,Val,var(Var),Env,true) :-
-  var_lookup(Var,Env,Val).
+  Env = (_,Binds),
+  var_lookup(Var,Binds,Val),
+  Val \== undef.
 match_pat(Env,Val,var(Var),NEnv,true) :-
-  var_lookup(Var,Env,undef),
   Env = (Error,Binds),
+  var_lookup(Var,Binds,undef),
   append(Binds,[(Var,Val)],NBinds),
   NEnv = (Error,NBinds).
 match_pat(_,_,_,_,false).
