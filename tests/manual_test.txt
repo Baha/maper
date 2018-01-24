@@ -1,0 +1,3 @@
+run(cases,main,[lit(int(1))],X,Y).
+run(factorial,fact,[lit(int(3))],X,Y).
+run(sum,main,[lit(int(2)),lit(int(1))],X,Y).
