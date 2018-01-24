@@ -1,7 +1,5 @@
 :- include('match').
 
-:- dynamic(fresh_nums/1).
-
 init(Mod,Fun,Args,Env,App) :-
   length(Args,NArgs),
   fun_lookup(lit(atom(Mod)),var(Fun,NArgs),FunDef),
@@ -79,32 +77,32 @@ tr(cf(IEnv,apply(FName,IExps)),cf(FEnv,Exp)) :-
   ite(FEnv2,FExp,Exp).
 
 %% (Call1)
-%% tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv2,error)) :-
-%%   IEnv = (top,_),
-%%   tr_list(IEnv,IExps,FEnv,FExps),
-%%   types(Atom,Fname,CTypes),
-%%   types(FExps,ETypes),
-%%   equal(CTypes,ETypes,false),
-%%   FEnv = (_,Binds),
-%%   FEnv2 = (bot,Binds).
+tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv2,error)) :-
+  IEnv = (top,Binds),
+  tr_list(IEnv,IExps,FEnv,FExps),
+  types(Atom,Fname,CTypes),
+  types(FExps,ETypes),
+  write(ETypes),
+  CTypes \== ETypes,
+  FEnv2 = (bot,Binds).
 
 %% (Call2)
 %% tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv2,error)) :-
-%%   IEnv = (top,_),
+%%   IEnv = (top,Binds),
 %%   tr_list(IEnv,IExps,FEnv,FExps),
 %%   types(Atom,Fname,CTypes),
 %%   types(FExps,ETypes),
-%%   equal(CTypes,ETypes,true),
-%%   call(Atom,Fname,FExps,error),
+%%   write(ETypes),
+%%   CTypes \== ETypes,
 %%   FEnv2 = (bot,Binds).
 
 %% (Call3)
 tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Exp)) :-
   IEnv = (top,_),
   tr_list(IEnv,IExps,FEnv,FExps),
-  %% types(Atom,Fname,CTypes),
-  %% types(FExps,ETypes),
-  %% CTypes == ETypes,
+  types(Atom,Fname,CTypes),
+  types(FExps,ETypes),
+  CTypes == ETypes,
   bif(Atom,Fname,FExps,CRes),
   ite(FEnv,CRes,Exp).
 

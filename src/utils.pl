@@ -21,6 +21,19 @@ ite(Env, _, error) :-
 ite(Env,Exp,Exp) :-
   Env = (top,_).
 
+type(lit(int(_)),int).
+type(lit(atom(_)),atom).
+
+types([],[]).
+types([Term|Terms],[Type|Types]) :-
+  type(Term,Type),
+  types(Terms,Types).
+
+types(lit(atom(erlang)),lit(atom('+')),[int,int]).
+types(lit(atom(erlang)),lit(atom('-')),[int,int]).
+types(lit(atom(erlang)),lit(atom('*')),[int,int]).
+types(lit(atom(erlang)),lit(atom('/')),[int,int]).
+
 bif(lit(atom(erlang)),lit(atom('+')),[lit(int(X)),lit(int(Y))], lit(int(Z))) :-
   Z is X+Y.
 bif(lit(atom(erlang)),lit(atom('-')),[lit(int(X)),lit(int(Y))], lit(int(Z))) :-
