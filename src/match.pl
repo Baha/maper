@@ -32,6 +32,11 @@ match_pats(Env,[Exp|_],[Pat|_],FEnv,false) :-
 
 
 match_pat(Env,lit(X),lit(X),Env,true).
+match_pat(Env,tuple(ExpElems),tuple(PatElems),FEnv,true) :-
+  match_pats(Env,ExpElems,PatElems,FEnv,true).
+match_pat(Env,cons(ExpHead,ExpTail),cons(PatHead,PatTail),FEnv,true) :-
+  match_pat(Env,ExpHead,PatHead,MEnv,true),
+  match_pat(MEnv,ExpTail,PatTail,FEnv,true).
 match_pat(Env,Val,var(Var),Env,true) :-
   Env = (_,Binds),
   var_lookup(Var,Binds,Val),
