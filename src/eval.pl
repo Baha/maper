@@ -44,12 +44,15 @@ tr(cf(IEnv,tuple(IExps)),cf(FEnv,Exp)) :-
   tr_list(IEnv,IExps,FEnv,FExps),
   ite(FEnv,tuple(FExps),Exp).
 
+%% TODO: Review this. Can it be done the same way
+%% as in the apply rule?
 %% (Let)
 tr(cf(IEnv,let(Vars,IExp1,IExp2)),cf(FEnv,Exp)) :-
   IEnv = (top,_),
   tr(cf(IEnv,IExp1),cf(MEnv,FExp1)),
   MEnv = (Error,MBinds),
-  append(MBinds,(Vars,FExp1),LBinds),
+  zip_binds(Vars,[FExp1],ABinds),
+  append(MBinds,ABinds,LBinds),
   LEnv = (Error,LBinds),
   tr(cf(LEnv,IExp2),cf(FEnv,FExp2)),
   ite(FEnv,FExp2,Exp).
@@ -96,14 +99,14 @@ tr(cf(IEnv,apply(FName,IExps)),cf(FEnv,Exp)) :-
 %%   FEnv2 = (bot,Binds).
 
 %% (Call3)
-%% tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv2,Exp)) :-
-%%   IEnv = (top,_),
-%%   tr_list(IEnv,IExps,FEnv,FExps),
-%%   types(Atom,Fname,CTypes),
-%%   types(FExps,ETypes),
-%%   equal(CTypes,ETypes,true),
-%%   call(Atom,Fname,FExps,CRes),
-%%   ite(FEnv2,CRes,Exp).
+tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Exp)) :-
+  IEnv = (top,_),
+  tr_list(IEnv,IExps,FEnv,FExps),
+  %% types(Atom,Fname,CTypes),
+  %% types(FExps,ETypes),
+  %% CTypes == ETypes,
+  bif(Atom,Fname,FExps,CRes),
+  ite(FEnv,CRes,Exp).
 
 %% (Primop)
 %% tr(cf(IEnv,primop('match_fail',Exp)),cf(FEnv2,error))

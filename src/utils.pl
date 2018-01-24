@@ -20,3 +20,12 @@ ite(Env, _, error) :-
   Env = (bot,_).
 ite(Env,Exp,Exp) :-
   Env = (top,_).
+
+bif(lit(atom(erlang)),lit(atom('+')),[lit(int(X)),lit(int(Y))], lit(int(Z))) :-
+  Z is X+Y.
+bif(lit(atom(erlang)),lit(atom('-')),[lit(int(X)),lit(int(Y))], lit(int(Z))) :-
+  Z is X-Y.
+bif(lit(atom(erlang)),lit(atom('*')),[lit(int(X)),lit(int(Y))], lit(int(Z))) :-
+  Z is X*Y.
+bif(lit(atom(erlang)),lit(atom('/')),[lit(int(X)),lit(int(Y))], lit(int(Z))) :-
+  Z is div(X,Y).

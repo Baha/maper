@@ -15,14 +15,12 @@ match_list(Env,Exps,[Clause|Clauses],CEnv,CExp) :-
   match_clause(Env,Exps,Clause,_,_,false),
   match_list(Env,Exps,Clauses,CEnv,CExp).
 
-match_clause(IEnv,IExps,clause(Pats,_,Body),CEnv,Body,true) :-
-  match_pats(IEnv,IExps,Pats,CEnv,true).
-
-  %% CEnv = (top,CBinds),
-  %% match_guard(CBinds,Guard,true).
-%%
 %% TODO: Not assume guards are always true
 %% match_guard(_,_,true).
+match_clause(IEnv,IExps,clause(Pats,_,Body),CEnv,Body,true) :-
+  match_pats(IEnv,IExps,Pats,CEnv,true).
+  %% CEnv = (top,CBinds),
+  %% match_guard(CBinds,Guard,true).
 match_clause(_,_,_,_,_,false).
 
 match_pats(Env,[],[],Env,true).
