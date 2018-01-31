@@ -77,24 +77,23 @@ tr(cf(IEnv,apply(FName,IExps)),cf(FEnv,Exp)) :-
   ite(FEnv2,FExp,Exp).
 
 %% (Call1)
-tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv2,error)) :-
-  IEnv = (top,Binds),
+tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv2,error(badarith))) :-
+  IEnv = (top,_),
   tr_list(IEnv,IExps,FEnv,FExps),
   types(Atom,Fname,CTypes),
   types(FExps,ETypes),
-  write(ETypes),
   CTypes \== ETypes,
+  FEnv = (_,Binds),
   FEnv2 = (bot,Binds).
 
 %% (Call2)
-%% tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv2,error)) :-
-%%   IEnv = (top,Binds),
-%%   tr_list(IEnv,IExps,FEnv,FExps),
-%%   types(Atom,Fname,CTypes),
-%%   types(FExps,ETypes),
-%%   write(ETypes),
-%%   CTypes \== ETypes,
-%%   FEnv2 = (bot,Binds).
+tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,error(bad_arg))) :-
+  IEnv = (top,_),
+  tr_list(IEnv,IExps,FEnv,FExps),
+  types(Atom,Fname,CTypes),
+  types(FExps,ETypes),
+  CTypes == ETypes,
+  bif(Atom,Fname,FExps,bad_arg).
 
 %% (Call3)
 tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Exp)) :-
@@ -107,9 +106,9 @@ tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Exp)) :-
   ite(FEnv,CRes,Exp).
 
 %% (Primop)
-%% tr(cf(IEnv,primop('match_fail',Exp)),cf(FEnv2,error))
-%%   IEnv = (_,Binds),
-%%   FEnv = (bot,Binds).
+tr(cf(IEnv,primop(lit(atom(match_fail)),X)),cf(FEnv,X)) :-
+  IEnv = (_,Binds),
+  FEnv = (bot,Binds).
 
 tr_list(IEnv,[],IEnv,[]).
 tr_list(IEnv,[IExp|IExps],FEnv,[FExp|FExps]) :-
