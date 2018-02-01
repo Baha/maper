@@ -1,7 +1,7 @@
 cd tests
-erl -noshell -pa ../ebin -run erl2fact main hello -s init stop #> ../src/tmp.pl
-erl -noshell -pa ../ebin -run erl2fact main cases -s init stop #> ../src/tmp.pl
-erl -noshell -pa ../ebin -run erl2fact main factorial -s init stop #> ../src/tmp.pl
-erl -noshell -pa ../ebin -run erl2fact main sum -s init stop > ../src/tmp.pl
-erl -noshell -pa ../ebin -run erl2fact main sum_tuple -s init stop #> ../src/tmp.pl
-erl -noshell -pa ../ebin -run erl2fact main sum_list -s init stop #> ../src/tmp.pl
+test_path="../src/"
+cmd_init="erl -noshell -pa ../ebin -run erl2fact main "
+cmd_end=" -s init stop"
+for test in hello cases cases_primop factorial sum sum_tuple sum_list; do
+   $cmd_init$test$cmd_end > $test_path$test".pl"
+done
