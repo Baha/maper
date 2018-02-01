@@ -1,5 +1,8 @@
 :- include('match').
 
+%% init(mod,fun,args,env,app)
+%% initializes fun (from mod) application
+%% with the corresponding environment
 init(Mod,Fun,Args,Env,App) :-
   length(Args,NArgs),
   fun_lookup(lit(atom(Mod)),var(Fun,NArgs),FunDef),
@@ -12,9 +15,17 @@ init(Mod,Fun,Args,Env,App) :-
 %% evaluates fun (from mod) application and
 %% returns the final environment and expression
 run(Mod,Fun,Args,FEnv,FExp) :-
-  consult(tmp),
+  consult(Mod),
   init(Mod,Fun,Args,IEnv,IApp),
   tr(cf(IEnv,IApp),cf(FEnv,FExp)).
+
+%% tr_list(init_env,init_exps,final_env,final_exps)
+%% evaluates a list of transitions (from exp to exp) and
+%% returns the final environment and expressions
+tr_list(IEnv,[],IEnv,[]).
+tr_list(IEnv,[IExp|IExps],FEnv,[FExp|FExps]) :-
+  tr(cf(IEnv,IExp),cf(NEnv,FExp)),
+  tr_list(NEnv,IExps,FEnv,FExps).
 
 %% (Error)
 tr(cf(Env,Exp),cf(Env,Exp)) :-
@@ -109,8 +120,3 @@ tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Exp)) :-
 tr(cf(IEnv,primop(lit(atom(match_fail)),X)),cf(FEnv,X)) :-
   IEnv = (_,Binds),
   FEnv = (bot,Binds).
-
-tr_list(IEnv,[],IEnv,[]).
-tr_list(IEnv,[IExp|IExps],FEnv,[FExp|FExps]) :-
-  tr(cf(IEnv,IExp),cf(NEnv,FExp)),
-  tr_list(NEnv,IExps,FEnv,FExps).
