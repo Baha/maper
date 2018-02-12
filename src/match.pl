@@ -5,12 +5,9 @@
 %% returns the resulting environment and expression (clause body)
 match(IEnv,IExps,_,IEnv,IExps) :-
   IEnv = (bot,_).
-match(IEnv,IExps,Clauses,JEnv,CExp) :-
-  IEnv = (top,IBinds),
-  match_list(IEnv,IExps,Clauses,CEnv,CExp),
-  CEnv = (Error,CBinds),
-  append(IBinds,CBinds,JBinds),
-  JEnv = (Error,JBinds).
+match(IEnv,IExps,Clauses,CEnv,CExp) :-
+  IEnv = (top,_),
+  match_list(IEnv,IExps,Clauses,CEnv,CExp).
 
 match_list(Env,Exps,[Clause|_],CEnv,CExp) :-
   match_clause(Env,Exps,Clause,CEnv,CExp,true).
