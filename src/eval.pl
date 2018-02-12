@@ -117,6 +117,6 @@ tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Exp)) :-
   ite(FEnv,CRes,Exp).
 
 %% (Primop)
-tr(cf(IEnv,primop(lit(atom(match_fail)),X)),cf(FEnv,X)) :-
-  IEnv = (_,Binds),
+tr(cf(IEnv,primop(lit(atom(match_fail)),_)),cf(FEnv,error(match_fail))) :-
+  IEnv = (top,Binds),
   FEnv = (bot,Binds).

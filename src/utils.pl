@@ -23,7 +23,7 @@ format_values(Exp,[Exp]).
 
 %% ite(env,exp_in,exp_out)
 %% outputs error if env contains bottom, and exp_in otherwise
-ite(Env, _, error) :-
+ite(Env, Exp, Exp) :-
   Env = (bot,_).
 ite(Env,Exp,Exp) :-
   Env = (top,_).
