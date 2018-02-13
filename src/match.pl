@@ -18,12 +18,9 @@ match_list(Env,Exps,[Clause|Clauses],CEnv,CExp) :-
 %% match_clause(init_env,init_exps,clause,match_env,match_exp,result)
 %% matches a list of expressions with a clause and
 %% returns the result (and environment and expression if true)
-match_clause(IEnv,IExps,clause(Pats,_,Body),CEnv,Body,true) :-
-  match_pats(IEnv,IExps,Pats,CEnv,true).
-  %% TODO: Not assume guards are always true
-  %% match_guard(_,_,true).
-  %% CEnv = (top,CBinds),
-  %% match_guard(CBinds,Guard,true).
+match_clause(IEnv,IExps,clause(Pats,Guard,Body),CEnv,Body,true) :-
+  match_pats(IEnv,IExps,Pats,CEnv,true),
+  match_guard(CEnv,Guard,true).
 match_clause(_,_,_,_,_,false).
 
 %% match_pats(init_env,init_exps,patterns,match_env,result)
@@ -53,3 +50,8 @@ match_pat(Env,Val,var(Var),NEnv,true) :-
   append(Binds,[(Var,Val)],NBinds),
   NEnv = (Error,NBinds).
 match_pat(_,_,_,_,false).
+
+%% match_guard(env,exp,result)
+%% returns true if guard evaluates to true
+match_guard(Env,Guard,true) :-
+  tr(cf(Env,Guard),cf(_,lit(atom(true)))).
