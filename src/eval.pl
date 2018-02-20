@@ -15,6 +15,7 @@ init(Mod,Fun,Args,Env,App) :-
 %% evaluates fun (from mod) application and
 %% returns the final environment and expression
 run(Mod,Fun,Args,FEnv,FExp) :-
+  retractall(fundef(_,_,_)),
   consult(Mod),
   init(Mod,Fun,Args,IEnv,IApp),
   tr(cf(IEnv,IApp),cf(FEnv,FExp)).
