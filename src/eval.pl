@@ -83,7 +83,7 @@ tr(cf(IEnv,case(IExp,Clauses)),cf(FEnv,Exp)) :-
   ite(FEnv,FExp,Exp).
 
 %% (Apply)
-tr(cf(IEnv,apply(FName,IExps)),cf(FEnv2,Exp)) :-
+tr(cf(IEnv,apply(FName,IExps)),cf(FEnv,Exp)) :-
   IEnv = (top,_),
   % TODO: Pass module here
   fun_lookup(lit(atom(any)),FName,FunDef),
