@@ -14,11 +14,17 @@ init(Mod,Fun,Args,Env,App) :-
 %% run(mod,fun,args,final_env,final_exp)
 %% evaluates fun (from mod) application and
 %% returns the final environment and expression
-run(Mod,Fun,Args,FEnv,FExp) :-
+run(Mod,(Fun,Arity),Args,FEnv,FExp) :-
+  length(Args,NArgs),
+  Arity == NArgs,
   retractall(fundef(_,_,_)),
   consult(Mod),
   init(Mod,Fun,Args,IEnv,IApp),
   tr(cf(IEnv,IApp),cf(FEnv,FExp)).
+
+run(_,(_,Arity),Args,[],[]) :-
+  length(Args,NArgs),
+  Arity \== NArgs.
 
 %% tr_list(init_env,init_exps,final_env,final_exps)
 %% evaluates a list of transitions (from exp to exp) and
