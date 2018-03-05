@@ -83,16 +83,17 @@ tr(cf(IEnv,case(IExp,Clauses)),cf(FEnv,Exp)) :-
   ite(FEnv,FExp,Exp).
 
 %% (Apply)
-tr(cf(IEnv,apply(FName,IExps)),cf(FEnv,Exp)) :-
+tr(cf(IEnv,apply(FName,IExps)),cf(FEnv3,Exp)) :-
   IEnv = (top,_),
   % TODO: Pass module here
   fun_lookup(lit(atom(any)),FName,FunDef),
   FunDef = fun(Pars,FunBody),
   tr_list(IEnv,IExps,FEnv,FExps),
   zip_binds(Pars,FExps,AppBinds),
-  FEnv = (Error,_),
-  tr(cf((Error,AppBinds),FunBody),cf(FEnv2,FExp)),
-  ite(FEnv2,FExp,Exp).
+  FEnv = (Error,Binds),
+  tr(cf((Error,AppBinds),FunBody),cf((Error2,_),FExp)),
+  FEnv3 = (Error2,Binds),
+  ite(FEnv3,FExp,Exp).
 
 %% (Call1)
 tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv2,error(badarith))) :-
