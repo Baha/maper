@@ -30,8 +30,7 @@ ite(Env,Exp,Exp) :-
 
 %% type(term,type)
 %% returns the type of term
-type(lit(int(_)),int).
-type(lit(atom(_)),atom).
+type(lit(Type,_),Type).
 
 %% types(terms,type)
 %% returns the types of a list of terms
@@ -42,60 +41,60 @@ types([Term|Terms],[Type|Types]) :-
 
 %% types(mod,fun,types)
 %% returns the expected types for a given BIF
-types(lit(atom(erlang)),lit(atom('+')),[int,int]).
-types(lit(atom(erlang)),lit(atom('-')),[int,int]).
-types(lit(atom(erlang)),lit(atom('*')),[int,int]).
-types(lit(atom(erlang)),lit(atom('/')),[int,int]).
-types(lit(atom(erlang)),lit(atom('==')),[int,int]).
-types(lit(atom(erlang)),lit(atom('/=')),[int,int]).
-types(lit(atom(erlang)),lit(atom('=<')),[int,int]).
-types(lit(atom(erlang)),lit(atom('<')),[int,int]).
-types(lit(atom(erlang)),lit(atom('>=')),[int,int]).
-types(lit(atom(erlang)),lit(atom('>')),[int,int]).
-types(lit(atom(erlang)),lit(atom('=:=')),[int,int]).
-types(lit(atom(erlang)),lit(atom('=/=')),[int,int]).
-types(lit(atom(erlang)),lit(atom('==')),[atom,atom]).
-types(lit(atom(erlang)),lit(atom('/=')),[atom,atom]).
-types(lit(atom(erlang)),lit(atom('=:=')),[atom,atom]).
-types(lit(atom(erlang)),lit(atom('=/=')),[atom,atom]).
+types(lit(atom,erlang),lit(atom,'+'),[int,int]).
+types(lit(atom,erlang),lit(atom,'-'),[int,int]).
+types(lit(atom,erlang),lit(atom,'*'),[int,int]).
+types(lit(atom,erlang),lit(atom,'/'),[int,int]).
+types(lit(atom,erlang),lit(atom,'=='),[int,int]).
+types(lit(atom,erlang),lit(atom,'/='),[int,int]).
+types(lit(atom,erlang),lit(atom,'=<'),[int,int]).
+types(lit(atom,erlang),lit(atom,'<'),[int,int]).
+types(lit(atom,erlang),lit(atom,'>='),[int,int]).
+types(lit(atom,erlang),lit(atom,'>'),[int,int]).
+types(lit(atom,erlang),lit(atom,'=:='),[int,int]).
+types(lit(atom,erlang),lit(atom,'=/='),[int,int]).
+types(lit(atom,erlang),lit(atom,'=='),[atom,atom]).
+types(lit(atom,erlang),lit(atom,'/='),[atom,atom]).
+types(lit(atom,erlang),lit(atom,'=:='),[atom,atom]).
+types(lit(atom,erlang),lit(atom,'=/='),[atom,atom]).
 %% bif(mod,fun,inputs,outputs)
 %% emulates the execution of a given BIF
-bif(lit(atom(erlang)),lit(atom('+')),[lit(int(X)),lit(int(Y))], lit(int(Z))) :-
+bif(lit(atom,erlang),lit(atom,'+'),[lit(int,X),lit(int,Y)], lit(int,Z)) :-
   Z is X+Y.
-bif(lit(atom(erlang)),lit(atom('-')),[lit(int(X)),lit(int(Y))], lit(int(Z))) :-
+bif(lit(atom,erlang),lit(atom,'-'),[lit(int,X),lit(int,Y)], lit(int,Z)) :-
   Z is X-Y.
-bif(lit(atom(erlang)),lit(atom('*')),[lit(int(X)),lit(int(Y))], lit(int(Z))) :-
+bif(lit(atom,erlang),lit(atom,'*'),[lit(int,X),lit(int,Y)], lit(int,Z)) :-
   Z is X*Y.
-bif(lit(atom(erlang)),lit(atom('/')),[lit(int(X)),lit(int(Y))], lit(int(Z))) :-
+bif(lit(atom,erlang),lit(atom,'/'),[lit(int,X),lit(int,Y)], lit(int,Z)) :-
   Z is div(X,Y).
 
-bif(lit(atom(erlang)),lit(atom('==')),[X,X], lit(atom(true))).
-bif(lit(atom(erlang)),lit(atom('==')),[X,Y], lit(atom(false))) :-
+bif(lit(atom,erlang),lit(atom,'=='),[X,X], lit(atom,true)).
+bif(lit(atom,erlang),lit(atom,'=='),[X,Y], lit(atom,false)) :-
   X \= Y.
-bif(lit(atom(erlang)),lit(atom('/=')),[X,X], lit(atom(false))).
-bif(lit(atom(erlang)),lit(atom('/=')),[X,Y], lit(atom(true))) :-
+bif(lit(atom,erlang),lit(atom,'/='),[X,X], lit(atom,false)).
+bif(lit(atom,erlang),lit(atom,'/='),[X,Y], lit(atom,true)) :-
   X \= Y.
-bif(lit(atom(erlang)),lit(atom('=<')),[lit(int(X)),lit(int(Y))], lit(atom(true))) :-
+bif(lit(atom,erlang),lit(atom,'=<'),[lit(int,X),lit(int,Y)], lit(atom,true)) :-
   X =< Y.
-bif(lit(atom(erlang)),lit(atom('=<')),[lit(int(X)),lit(int(Y))], lit(atom(false))) :-
+bif(lit(atom,erlang),lit(atom,'=<'),[lit(int,X),lit(int,Y)], lit(atom,false)) :-
   not(X =< Y).
-bif(lit(atom(erlang)),lit(atom('<')),[lit(int(X)),lit(int(Y))], lit(atom(true))) :-
+bif(lit(atom,erlang),lit(atom,'<'),[lit(int,X),lit(int,Y)], lit(atom,true)) :-
   X < Y.
-bif(lit(atom(erlang)),lit(atom('<')),[lit(int(X)),lit(int(Y))], lit(atom(false))) :-
+bif(lit(atom,erlang),lit(atom,'<'),[lit(int,X),lit(int,Y)], lit(atom,false)) :-
   not(X < Y).
-bif(lit(atom(erlang)),lit(atom('>=')),[lit(int(X)),lit(int(Y))], lit(atom(true))) :-
+bif(lit(atom,erlang),lit(atom,'>='),[lit(int,X),lit(int,Y)], lit(atom,true)) :-
   X >= Y.
-bif(lit(atom(erlang)),lit(atom('>=')),[lit(int(X)),lit(int(Y))], lit(atom(false))) :-
+bif(lit(atom,erlang),lit(atom,'>='),[lit(int,X),lit(int,Y)], lit(atom,false)) :-
   not(X >= Y).
-bif(lit(atom(erlang)),lit(atom('>')),[lit(int(X)),lit(int(Y))], lit(atom(true))) :-
+bif(lit(atom,erlang),lit(atom,'>'),[lit(int,X),lit(int,Y)], lit(atom,true)) :-
   X > Y.
-bif(lit(atom(erlang)),lit(atom('>')),[lit(int(X)),lit(int(Y))], lit(atom(false))) :-
+bif(lit(atom,erlang),lit(atom,'>'),[lit(int,X),lit(int,Y)], lit(atom,false)) :-
   not(X > Y).
 %% '=:=' and '=/=' are exact comparisons (i.e., 2.0 =:= 2 is false),
 %% but we implement them as '==' and '/=' since we only consider integers
-bif(lit(atom(erlang)),lit(atom('=:=')),[X,X], lit(atom(true))).
-bif(lit(atom(erlang)),lit(atom('=:=')),[X,Y], lit(atom(false))) :-
+bif(lit(atom,erlang),lit(atom,'=:='),[X,X], lit(atom,true)).
+bif(lit(atom,erlang),lit(atom,'=:='),[X,Y], lit(atom,false)) :-
   X \= Y.
-bif(lit(atom(erlang)),lit(atom('=/=')),[X,X], lit(atom(false))).
-bif(lit(atom(erlang)),lit(atom('=/=')),[X,Y], lit(atom(true))) :-
+bif(lit(atom,erlang),lit(atom,'=/='),[X,X], lit(atom,false)).
+bif(lit(atom,erlang),lit(atom,'=/='),[X,Y], lit(atom,true)) :-
   X \= Y.

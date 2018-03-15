@@ -41,7 +41,7 @@ match_pats(Env,[Exp|_],[Pat|_],FEnv,false) :-
   match_pat(Env,Exp,Pat,FEnv,false).
 
 
-match_pat(Env,lit(X),lit(X),Env,true).
+match_pat(Env,lit(Type,Val),lit(Type,Val),Env,true).
 match_pat(Env,tuple(ExpElems),tuple(PatElems),FEnv,true) :-
   match_pats(Env,ExpElems,PatElems,FEnv,true).
 match_pat(Env,cons(ExpHead,ExpTail),cons(PatHead,PatTail),FEnv,true) :-
@@ -77,4 +77,4 @@ match_pat(Env,Exp,Pat,NEnv,false) :- % What happens to NEnv ?
 %% match_guard(env,exp,result)
 %% returns true if guard evaluates to true
 match_guard(Env,Guard,true) :-
-  tr(cf(Env,Guard),cf(_,lit(atom(true)))).
+  tr(cf(Env,Guard),cf(_,lit(atom,true))).

@@ -5,7 +5,7 @@
 %% with the corresponding environment
 init(Mod,Fun,Args,Env,App) :-
   length(Args,NArgs),
-  fun_lookup(lit(atom(Mod)),var(Fun,NArgs),FunDef),
+  fun_lookup(lit(atom,Mod),var(Fun,NArgs),FunDef),
   FunDef = fun(Pars,_),
   zip_binds(Pars,Args,Binds),
   Env = (top,Binds),
@@ -39,7 +39,7 @@ tr(cf(Env,Exp),cf(Env,Exp)) :-
   Env = (bot,_).
 
 %% (Lit)
-tr(cf(Env,lit(Lit)),cf(Env,lit(Lit))) :-
+tr(cf(Env,lit(Type,Val)),cf(Env,lit(Type,Val))) :-
   Env = (top,_).
 
 %% (Var)
@@ -86,7 +86,7 @@ tr(cf(IEnv,case(IExp,Clauses)),cf(FEnv,Exp)) :-
 tr(cf(IEnv,apply(FName,IExps)),cf(FEnv3,Exp)) :-
   IEnv = (top,_),
   % TODO: Pass module here
-  fun_lookup(lit(atom(any)),FName,FunDef),
+  fun_lookup(lit(atom,any),FName,FunDef),
   FunDef = fun(Pars,FunBody),
   tr_list(IEnv,IExps,FEnv,FExps),
   zip_binds(Pars,FExps,AppBinds),
@@ -125,6 +125,6 @@ tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Exp)) :-
   ite(FEnv,CRes,Exp).
 
 %% (Primop)
-tr(cf(IEnv,primop(lit(atom(match_fail)),_)),cf(FEnv,error(match_fail))) :-
+tr(cf(IEnv,primop(lit(atom,match_fail),_)),cf(FEnv,error(match_fail))) :-
   IEnv = (top,Binds),
   FEnv = (bot,Binds).
