@@ -9,6 +9,7 @@
 
 -define(INT_ATOM,    "int").
 -define(ATOM_ATOM,   "atom").
+-define(UNDEF_ATOM,  "undef").
 -define(MODULE_ATOM, "module").
 -define(FUN_ATOM,    "fun").
 -define(LIT_ATOM,    "lit").
@@ -25,13 +26,15 @@
 -define(FUNDEF_ATOM, "fundef").
 
 -define(INT_PRED(Int),
-  ?INT_ATOM ++ ?ARG_START ++
-  Int ++ ?ARG_END).
+  ?INT_ATOM ++ ?ARG_SEP ++ Int).
 
 -define(ATOM_PRED(Atom),
-  ?ATOM_ATOM ++ ?ARG_START ++
-  ?SQUOTE_START ++ Atom ++ ?SQUOTE_END
-  ++ ?ARG_END).
+  ?ATOM_ATOM ++ ?ARG_SEP ++
+  ?SQUOTE_START ++ Atom ++ ?SQUOTE_END).
+
+-define(NIL_PRED,
+  ?UNDEF_ATOM ++ ?ARG_SEP ++
+  ?LIST_START ++ ?LIST_END).
 
 -define(MODULE_PRED(Name, Defs),
   ?MODULE_ATOM ++ ?ARG_START ++

@@ -39,6 +39,8 @@ cerl2fact(Node) when is_atom(Node) ->
   FactAtom = atom_to_list(Node),
   ?ATOM_PRED(FactAtom);
 
+cerl2fact([]) -> ?NIL_PRED;
+
 cerl2fact(Node) when is_list(Node) ->
   FactList = [cerl2fact(CoreElem) || CoreElem <- Node],
   ?LIST_START ++ string:join(FactList, ?LIST_SEP) ++ ?LIST_END;
