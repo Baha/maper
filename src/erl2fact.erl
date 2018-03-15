@@ -31,15 +31,15 @@ cerl2fact_fundef({ModName, FunName, FunBody}) ->
   FactFunBody    = cerl2fact(FunBody),
   ?FUNDEF_PRED(FactModuleName, FactFunName, FactFunBody).
 
-cerl2fact(Node) when is_integer(Node) ->
+cerl2fact_lit([]) -> ?NIL_PRED;
+
+cerl2fact_lit(Node) when is_integer(Node) ->
   FactInt = integer_to_list(Node),
   ?INT_PRED(FactInt);
 
-cerl2fact(Node) when is_atom(Node) ->
+cerl2fact_lit(Node) when is_atom(Node) ->
   FactAtom = atom_to_list(Node),
-  ?ATOM_PRED(FactAtom);
-
-cerl2fact([]) -> ?NIL_PRED;
+  ?ATOM_PRED(FactAtom).
 
 cerl2fact(Node) when is_list(Node) ->
   FactList = [cerl2fact(CoreElem) || CoreElem <- Node],
@@ -58,7 +58,7 @@ cerl2fact(Node) ->
       ?FUN_PRED(FactFunVars, FactFunBody);
     literal ->
       CoreConcrete = cerl:concrete(Node),
-      FactConcrete = cerl2fact(CoreConcrete),
+      FactConcrete = cerl2fact_lit(CoreConcrete),
       ?LIT_PRED(FactConcrete);
     var ->
       CoreVarName = cerl:var_name(Node),
