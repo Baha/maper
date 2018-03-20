@@ -25,9 +25,11 @@ match_list(Env,Exps,[Clause|Clauses],CEnv,CExp) :-
 match_clause(IEnv,IExps,clause(Pats,Guard,Body),CEnv,Body,true) :-
   match_pats(IEnv,IExps,Pats,CEnv,true),
   match_guard(CEnv,Guard,true).
-%match_clause(_,_,_,_,_,false).  % commented out by Ema.
 match_clause(IEnv,IExps,clause(Pats,_Guard,_Body1),CEnv,_Body2,false) :-
-  match_pats(IEnv,IExps,Pats,CEnv,false).   % Of course, this is not efficient.
+  match_pats(IEnv,IExps,Pats,CEnv,false).
+match_clause(IEnv,IExps,clause(Pats,Guard,_Body1),CEnv,_Body2,false) :-
+  match_pats(IEnv,IExps,Pats,CEnv,true),
+  match_guard(CEnv,Guard,false).
 
 
 %% match_pats(init_env,init_exps,patterns,match_env,result)
@@ -78,3 +80,7 @@ match_pat(Env,Exp,Pat,NEnv,false) :- % What happens to NEnv ?
 %% returns true if guard evaluates to true
 match_guard(Env,Guard,true) :-
   tr(cf(Env,Guard),cf(_,lit(atom,true))).
+match_guard(Env,Guard,false) :-
+  tr(cf(Env,Guard),cf(_,lit(atom,false))).
+match_guard(Env,Guard,false) :-
+  tr(cf(Env,Guard),cf((bot,_),_)).
