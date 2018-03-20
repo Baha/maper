@@ -22,15 +22,11 @@ match_list(Env,Exps,[Clause|Clauses],CEnv,CExp) :-
 %% match_clause(init_env,init_exps,clause,match_env,match_exp,result)
 %% matches a list of expressions with a clause and
 %% returns the result (and environment and expression if true)
-match_clause(IEnv,IExps,clause(Pats,Guard,Body),CEnv,Body,true) :-
+match_clause(IEnv,IExps,clause(Pats,Guard,Body),CEnv,Body,GRes) :-
   match_pats(IEnv,IExps,Pats,CEnv,true),
-  match_guard(CEnv,Guard,true).
+  match_guard(CEnv,Guard,GRes).
 match_clause(IEnv,IExps,clause(Pats,_Guard,_Body1),CEnv,_Body2,false) :-
   match_pats(IEnv,IExps,Pats,CEnv,false).
-match_clause(IEnv,IExps,clause(Pats,Guard,_Body1),CEnv,_Body2,false) :-
-  match_pats(IEnv,IExps,Pats,CEnv,true),
-  match_guard(CEnv,Guard,false).
-
 
 %% match_pats(init_env,init_exps,patterns,match_env,result)
 %% matches a list of expressions with a list of patterns and
