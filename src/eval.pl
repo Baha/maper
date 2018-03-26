@@ -128,3 +128,11 @@ tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Exp)) :-
 tr(cf(IEnv,primop(lit(atom,match_fail),_)),cf(FEnv,error(match_fail))) :-
   IEnv = (top,Binds),
   FEnv = (bot,Binds).
+
+%% (Try)
+tr(cf(IEnv,try(Arg,Vars,Body,EVars,Handler)),cf(FEnv,Exp)) :-
+  IEnv = (top,_),
+  tr(cf(IEnv,Arg),cf(MEnv,MExp)),
+  StdVarsBody = (Vars,Body),
+  ErrVarsBody = (EVars,Handler),
+  try_vars_body(IEnv,MEnv,MExp,StdVarsBody,ErrVarsBody,FEnv,Exp).

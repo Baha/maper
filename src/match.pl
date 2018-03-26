@@ -128,5 +128,5 @@ match_guard(Env,Guard,true) :-
   tr(cf(Env,Guard),cf(_,lit(atom,true))).
 match_guard(Env,Guard,false) :-
   tr(cf(Env,Guard),cf(_,lit(atom,false))).
-match_guard(Env,Guard,false) :-
-  tr(cf(Env,Guard),cf((bot,_),_)). % bad_arg only?
+%% match_guard(Env,Guard,false) :-
+%%   tr(cf(Env,Guard),cf((bot,_),_)). % bad_arg only?
