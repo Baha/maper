@@ -126,5 +126,17 @@ cerl2fact(Node) ->
       CorePrimopArgs = cerl:primop_args(Node),
       FactPrimopName = cerl2fact(CorePrimopName),
       FactPrimopArgs = cerl2fact(CorePrimopArgs),
-      ?PRIMOP_PRED(FactPrimopName, FactPrimopArgs)
+      ?PRIMOP_PRED(FactPrimopName, FactPrimopArgs);
+    'try' ->
+      CoreTryArg    = cerl:try_arg(Node),
+      CoreTryVars    = cerl:try_vars(Node),
+      CoreTryBody    = cerl:try_body(Node),
+      CoreTryEVars   = cerl:try_evars(Node),
+      CoreTryHandler = cerl:try_handler(Node),
+      FactTryArg    = cerl2fact(CoreTryArg),
+      FactTryVars    = cerl2fact(CoreTryVars),
+      FactTryBody    = cerl2fact(CoreTryBody),
+      FactTryEVars   = cerl2fact(CoreTryEVars),
+      FactTryHandler = cerl2fact(CoreTryHandler),
+      ?TRY_PRED(FactTryArg, FactTryVars, FactTryBody, FactTryEVars, FactTryHandler)
   end.
