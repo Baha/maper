@@ -24,6 +24,7 @@
 -define(CALL_ATOM,   "call").
 -define(PRIMOP_ATOM, "primop").
 -define(FUNDEF_ATOM, "fundef").
+-define(TRY_ATOM,    "try").
 
 -define(INT_PRED(Int),
   ?INT_ATOM ++ ?ARG_SEP ++ Int).
@@ -110,3 +111,11 @@
   Module   ++ ?ARG_SEP ++
   Name     ++ ?ARG_SEP ++
   Body     ++ ?ARG_END).
+
+-define(TRY_PRED(Arg, Vars, Body, EVars, Handler),
+  ?TRY_ATOM ++ ?ARG_START ++
+  Arg     ++ ?ARG_SEP ++
+  Vars    ++ ?ARG_SEP ++
+  Body    ++ ?ARG_SEP ++
+  EVars   ++ ?ARG_SEP ++
+  Handler ++ ?ARG_END).
