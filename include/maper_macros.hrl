@@ -16,7 +16,6 @@
 -define(VAR_ATOM,    "var").
 -define(CONS_ATOM,   "cons").
 -define(TUPLE_ATOM,  "tuple").
--define(VALUES_ATOM, "values").
 -define(LET_ATOM,    "let").
 -define(CASE_ATOM,   "case").
 -define(CLAUSE_ATOM, "clause").
@@ -67,10 +66,6 @@
 
 -define(TUPLE_PRED(Es),
   ?TUPLE_ATOM ++ ?ARG_START ++
-  Es ++ ?ARG_END).
-
--define(VALUES_PRED(Es),
-  ?VALUES_ATOM ++ ?ARG_START ++
   Es ++ ?ARG_END).
 
 -define(LET_PRED(Vars, Arg, Body),

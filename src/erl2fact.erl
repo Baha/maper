@@ -7,8 +7,6 @@ main(File) ->
   case compile:file(File, [to_core, binary]) of
     {ok, _ModuleName, CoreForms} ->
         FactDefs = cerl2fact_mod(CoreForms),
-        %CoreName = atom_to_list(ModuleName) ++ ".txt",
-        % file:write_file(CoreName,
         [io:fwrite("~s.~n~n", [FactDef]) || FactDef <- FactDefs];
     _ ->
       io:fwrite("Error: Could not compile file.~n"),
@@ -58,6 +56,9 @@ cerl2fact(Node) ->
       case CoreConcrete of
         Tuple when is_tuple(Tuple) ->
           cerl2fact(lit2core(Tuple));
+        [] ->
+          FactConcrete = cerl2fact_lit(CoreConcrete),
+          ?LIT_PRED(FactConcrete);
         List when is_list(List) ->
           cerl2fact(lit2core(List));
         _ ->
@@ -86,9 +87,9 @@ cerl2fact(Node) ->
       FactTupleEs = cerl2fact(CoreTupleEs),
       ?TUPLE_PRED(FactTupleEs);
     values ->
-      CoreValuesEs = cerl:values_es(Node),
-      FactValuesEs = cerl2fact(CoreValuesEs),
-      ?VALUES_PRED(FactValuesEs);
+      CoreValList  = cerl:abstract(cerl:values_es(Node)),
+      CoreConsList = cerl:unfold_literal(CoreValList),
+      cerl2fact(CoreConsList);
     'let' ->
       CoreLetVars = cerl:let_vars(Node),
       CoreLetArg  = cerl:let_arg(Node),
@@ -143,7 +144,8 @@ cerl2fact(Node) ->
       FactTryEVars   = cerl2fact(CoreTryEVars),
       FactTryHandler = cerl2fact(CoreTryHandler),
       ?TRY_PRED(FactTryArg, FactTryVars, FactTryBody, FactTryEVars, FactTryHandler);
-    _Literal ->
+    %% Catch-all case for literal values
+    _ ->
       cerl2fact(lit2core(Node))
   end.
 
