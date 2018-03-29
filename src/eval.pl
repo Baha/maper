@@ -43,9 +43,10 @@ tr(cf(Env,lit(Type,Val)),cf(Env,lit(Type,Val))) :-
   Env = (top,_).
 
 %% (Var)
-tr(cf(Env,var(Var)),cf(Env,Val)) :-
-  Env = (top,Binds),
-  var_lookup(Var,Binds,Val).
+tr(cf(Env,var(Var)),cf(FEnv,Val)) :-
+  Env  = (top,BindsIn),
+  var_binding(Var,BindsIn,Val,BindsOut),
+  FEnv = (top,BindsOut).
 
 %% (Cons)
 tr(cf(IEnv,cons(IExp1,IExp2)),cf(FEnv,Exp)) :-

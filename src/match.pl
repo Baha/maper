@@ -42,29 +42,11 @@ match_pat(Env,tuple(ExpElems),tuple(PatElems),FEnv,true) :-
 match_pat(Env,cons(ExpHead,ExpTail),cons(PatHead,PatTail),FEnv,true) :-
   match_pat(Env,ExpHead,PatHead,MEnv,true),
   match_pat(MEnv,ExpTail,PatTail,FEnv,true).
-match_pat(Env,Val,var(Var),Env,true) :-
-  Env = (_,Binds),
-  var_lookup(Var,Binds,Val),
-  Val \== undef.
-match_pat(Env,Val,var(Var),NEnv,true) :-
-  Env = (Error,Binds),
-  var_lookup(Var,Binds,undef),
-  append(Binds,[(Var,Val)],NBinds),  % Is the order of pairs relevant?
-  NEnv = (Error,NBinds).             % If it is not, I would remove the append.
-% EMA
-%%%% ------------- possible alternative implementation -------------------------
-%match_pat(Env,Val,var(Var),NEnv,true) :-
-%  Env =  (Error,Binds),
-%  var_lookup(Var,Binds,Val),
-%  update_binds(Val,Var,Binds,NBinds), % find a suitable name for this predicate
-%  NEnv = (Error,NBinds).
-%
-%update_binds(Val,_Var,Binds,NBinds) :-
-%  Val \== undef, NBinds = Binds.
-%update_binds(Val,Var,Binds,NBinds) :-
-%  Val == undef, NBinds = [(Var,Val)|Binds].
+match_pat(Env,Val,var(Var),FEnv,true) :-
+  Env =  (St,BindsIn),
+  var_binding(Var,BindsIn,Val,BindsOut),
+  FEnv = (St,BindsOut).
 %%%% ---------------------------------------------------------------------------
-%match_pat(_,_,_,_,false).           % commented out by Ema.
 match_pat(Env,Exp,Pat,NEnv,false) :- % What happens to NEnv ?
   unmatchable(Env,Exp,Pat),
   Env = NEnv.                        % Is it equal or not in case of mismatch?
@@ -100,8 +82,7 @@ unmatchable(Env,Exp,Pat) :-
 unmatchable(Env,Exp,Pat) :-
   Pat = var(Var),
   Env = (_,Binds),
-  var_lookup(Var,Binds,Val),
-  Val \== undef,
+  var_binding(Var,Binds,Val,Binds),
   dif(Exp,Val).
 
 % NOTE: same representation of lists?

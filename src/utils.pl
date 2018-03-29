@@ -3,14 +3,18 @@
 fun_lookup(_,Fun,FunDef) :-
   fundef(_,Fun,FunDef).
 
-%% var_lookup(var,env,result)
-%% searches a variable var in environment env and
-%% returns its value, or undef if not found
-var_lookup(_,[],undef).
-var_lookup(Var,[(Var,Val)|_],Val).
-var_lookup(Var,[(Var1,_)|REnv],Val) :-
-  Var \== Var1,
-  var_lookup(Var,REnv,Val).
+%% var_binding(var,env,result,env1)
+%% searches a variable var in environment env and returns its value val
+%% if var belongs to env, otherwise it adds the pair (var,val) to env.
+var_binding(Var,[],Val,[Bind]) :-
+  !,
+  Bind = (Var,Val).
+var_binding(Var,[Bind|REnv1],Val,[Bind|REnv1]) :-
+  Bind = (Var1,Val1), Var == Var1,
+  !,
+  Val = Val1.
+var_binding(Var,[Bind|REnv1],Val,[Bind|Renv2]) :-
+  var_binding(Var,REnv1,Val,Renv2).
 
 %% zip_binds(vars,values,binds)
 %% tuples a list of variables with their values
