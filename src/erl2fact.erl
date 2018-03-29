@@ -45,11 +45,8 @@ cerl2fact(Node) when is_list(Node) ->
   FactList = [cerl2fact(CoreElem) || CoreElem <- Node],
   ?LIST_START ++ string:join(FactList, ?LIST_SEP) ++ ?LIST_END;
 
-% TODO: Handle metavalue in this case
-cerl2fact({function_clause}) -> "function_clause";
-
 cerl2fact(Node) ->
-  case cerl:type(Node) of
+  case catch(cerl:type(Node)) of
     'fun' ->
       CoreFunVars = cerl:fun_vars(Node),
       CoreFunBody = cerl:fun_body(Node),
@@ -58,8 +55,15 @@ cerl2fact(Node) ->
       ?FUN_PRED(FactFunVars, FactFunBody);
     literal ->
       CoreConcrete = cerl:concrete(Node),
-      FactConcrete = cerl2fact_lit(CoreConcrete),
-      ?LIT_PRED(FactConcrete);
+      case CoreConcrete of
+        Tuple when is_tuple(Tuple) ->
+          cerl2fact(lit2core(Tuple));
+        List when is_list(List) ->
+          cerl2fact(lit2core(List));
+        _ ->
+          FactConcrete = cerl2fact_lit(CoreConcrete),
+          ?LIT_PRED(FactConcrete)
+      end;
     var ->
       CoreVarName = cerl:var_name(Node),
       case CoreVarName of
@@ -138,5 +142,17 @@ cerl2fact(Node) ->
       FactTryBody    = cerl2fact(CoreTryBody),
       FactTryEVars   = cerl2fact(CoreTryEVars),
       FactTryHandler = cerl2fact(CoreTryHandler),
-      ?TRY_PRED(FactTryArg, FactTryVars, FactTryBody, FactTryEVars, FactTryHandler)
+      ?TRY_PRED(FactTryArg, FactTryVars, FactTryBody, FactTryEVars, FactTryHandler);
+    _Literal ->
+      cerl2fact(lit2core(Node))
   end.
+
+lit2core(Lit) when is_integer(Lit) ->
+  cerl:c_int(Lit);
+lit2core(Lit) when is_atom(Lit) ->
+  cerl:c_atom(Lit);
+lit2core(Lit) when is_tuple(Lit) ->
+  TupleEs = [element(I,Lit) || I <- lists:seq(1,tuple_size(Lit))],
+  cerl:c_tuple(TupleEs);
+lit2core(Lit) when is_list(Lit) ->
+  cerl:c_values(Lit).
