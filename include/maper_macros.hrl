@@ -9,6 +9,7 @@
 
 -define(INT_ATOM,    "int").
 -define(ATOM_ATOM,   "atom").
+-define(LIST_ATOM,   "list").
 -define(NIL_ATOM,    "nil").
 -define(MODULE_ATOM, "module").
 -define(FUN_ATOM,    "fun").
@@ -33,8 +34,8 @@
   ?SQUOTE_START ++ Atom ++ ?SQUOTE_END).
 
 -define(NIL_PRED,
-  ?NIL_ATOM ++ ?ARG_SEP ++
-  ?LIST_START ++ ?LIST_END).
+  ?LIST_ATOM ++ ?ARG_SEP ++
+  ?NIL_ATOM).
 
 -define(MODULE_PRED(Name, Defs),
   ?MODULE_ATOM ++ ?ARG_START ++
