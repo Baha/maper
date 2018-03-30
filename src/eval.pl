@@ -102,7 +102,7 @@ tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv2,error(badarith))) :-
   tr_list(IEnv,IExps,FEnv,FExps),
   types(Atom,Fname,CTypes),
   types(FExps,ETypes),
-  CTypes \== ETypes,
+  dif(CTypes,ETypes),
   FEnv = (_,Binds),
   FEnv2 = (bot,Binds).
 
@@ -112,7 +112,7 @@ tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,error(bad_arg))) :-
   tr_list(IEnv,IExps,FEnv,FExps),
   types(Atom,Fname,CTypes),
   types(FExps,ETypes),
-  CTypes == ETypes,
+  CTypes = ETypes,
   bif(Atom,Fname,FExps,bad_arg).
 
 %% (Call3)
@@ -121,7 +121,7 @@ tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Exp)) :-
   tr_list(IEnv,IExps,FEnv,FExps),
   types(Atom,Fname,CTypes),
   types(FExps,ETypes),
-  CTypes == ETypes,
+  CTypes = ETypes,
   bif(Atom,Fname,FExps,CRes),
   ite(FEnv,CRes,Exp).
 
