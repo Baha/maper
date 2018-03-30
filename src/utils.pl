@@ -83,18 +83,18 @@ types(lit(atom,erlang),lit(atom,'=/='),[atom,atom]).
 %% atom comparisons
 bif(lit(atom,erlang),lit(atom,'=='),[X,X], lit(atom,true)).
 bif(lit(atom,erlang),lit(atom,'=='),[X,Y], lit(atom,false)) :-
-  X \= Y.
+  dif(X,Y).
 bif(lit(atom,erlang),lit(atom,'/='),[X,X], lit(atom,false)).
 bif(lit(atom,erlang),lit(atom,'/='),[X,Y], lit(atom,true)) :-
-  X \= Y.
+  dif(X,Y).
 %% '=:=' and '=/=' are exact comparisons (i.e., 2.0 =:= 2 is false),
 %% but we implement them as '==' and '/=' since we only consider integers
 bif(lit(atom,erlang),lit(atom,'=:='),[X,X], lit(atom,true)).
 bif(lit(atom,erlang),lit(atom,'=:='),[X,Y], lit(atom,false)) :-
-  X \= Y.
+  dif(X,Y).
 bif(lit(atom,erlang),lit(atom,'=/='),[X,X], lit(atom,false)).
 bif(lit(atom,erlang),lit(atom,'=/='),[X,Y], lit(atom,true)) :-
-  X \= Y.
+  dif(X,Y).
 
 %% integer comparisons
 bif(lit(atom,erlang),lit(atom,'=<'),[lit(int,X),lit(int,Y)], lit(atom,true)) :-
