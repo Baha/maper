@@ -1,5 +1,7 @@
 :- include('match').
 
+:- discontiguous tr/2.
+
 %% init(mod,fun,args,env,app)
 %% initializes fun (from mod) application
 %% with the corresponding environment
@@ -64,6 +66,7 @@ tr(cf(IEnv,tuple(IExps)),cf(FEnv,Exp)) :-
 %% TODO: Review this. Can it be done the same way
 %% as in the apply rule?
 %% (Let)
+/*
 tr(cf(IEnv,let(Vars,IExp1,IExp2)),cf(FEnv,Exp)) :-
   IEnv = (top,_),
   tr(cf(IEnv,IExp1),cf(MEnv,FExp1)),
@@ -73,6 +76,23 @@ tr(cf(IEnv,let(Vars,IExp1,IExp2)),cf(FEnv,Exp)) :-
   LEnv = (Error,LBinds),
   tr(cf(LEnv,IExp2),cf(FEnv,FExp2)),
   ite(FEnv,FExp2,Exp).
+*/
+% =====
+tr(cf(IEnv,let(Vars,IExp1,IExp2)),cf(FEnv,Exp)) :-
+  IEnv = (top,_),
+  tr(cf(IEnv,IExp1),cf(MEnv,FExp1)),
+  let_cont(cf(MEnv,FExp1),Vars,IExp2,cf(FEnv,Exp)).
+%
+let_cont(cf(MEnv,FExp1),Vars,IExp2,cf(FEnv,Exp)) :-
+  MEnv = (top,MBinds),
+  zip_binds(Vars,[FExp1],ABinds),
+  append(MBinds,ABinds,LBinds),
+  LEnv = (top,LBinds),
+  tr(cf(LEnv,IExp2),cf(FEnv,FExp2)),
+  ite(FEnv,FExp2,Exp).
+%
+let_cont(cf(MEnv,Exp),_Vars,_IExp2,cf(MEnv,Exp)) :-
+  MEnv = (bot,_Binds).
 
 %% (Case)
 tr(cf(IEnv,case(IExp,Clauses)),cf(FEnv,Exp)) :-
