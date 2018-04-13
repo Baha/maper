@@ -22,7 +22,7 @@ match_clause(B1,IEnv,IExps,clause(Pats,Guard,Body),B3,CEnv,Body,GRes) :-
   match_pats(B1,IEnv,IExps,Pats,B2,CEnv,true),
   match_guard(B2,CEnv,Guard,B3,GRes).
 match_clause(B1,IEnv,IExps,clause(Pats,_Guard,_Body1),B2,CEnv,_Body2,false) :-
-  match_pats(B1,IEnv,IExps,B2,Pats,CEnv,false).
+  match_pats(B1,IEnv,IExps,Pats,B2,CEnv,false).
 
 %% match_pats(init_env,init_exps,patterns,match_env,result)
 %% matches a list of expressions with a list of patterns and
