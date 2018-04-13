@@ -27,13 +27,6 @@ zip_binds([var(Par)|RPars],[Val|Vals],[(Par,Val)|RPars1]) :-
 format_values(values(Exps),Exps).
 format_values(Exp,[Exp]).
 
-%% ite(env,exp_in,exp_out)
-%% outputs error if env contains bottom, and exp_in otherwise
-ite(Env, Exp, Exp) :-
-  Env = (bot,_).
-ite(Env,Exp,Exp) :-
-  Env = (top,_).
-
 %% try_vars_body(init_env,mid_env,mid_exp,
 %%               correct_case,error_case,
 %%               final_env,final_exp)

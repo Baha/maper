@@ -55,13 +55,13 @@ tr(cf(IEnv,cons(IExp1,IExp2)),cf(FEnv,Exp)) :-
   IEnv = (top,_),
   tr(cf(IEnv,IExp1),cf(MEnv,FExp1)),
   tr(cf(MEnv,IExp2),cf(FEnv,FExp2)),
-  ite(FEnv,cons(FExp1,FExp2),Exp).
+  Exp = cons(FExp1,FExp2).
 
 %% (Tuple)
 tr(cf(IEnv,tuple(IExps)),cf(FEnv,Exp)) :-
   IEnv = (top,_),
   tr_list(IEnv,IExps,FEnv,FExps),
-  ite(FEnv,tuple(FExps),Exp).
+  Exp = tuple(FExps).
 
 %% TODO: Review this. Can it be done the same way
 %% as in the apply rule?
@@ -88,8 +88,7 @@ let_cont(cf(MEnv,FExp1),Vars,IExp2,cf(FEnv,Exp)) :-
   zip_binds(Vars,[FExp1],ABinds),
   append(MBinds,ABinds,LBinds),
   LEnv = (top,LBinds),
-  tr(cf(LEnv,IExp2),cf(FEnv,FExp2)),
-  ite(FEnv,FExp2,Exp).
+  tr(cf(LEnv,IExp2),cf(FEnv,Exp)).
 %
 let_cont(cf(MEnv,Exp),_Vars,_IExp2,cf(MEnv,Exp)) :-
   MEnv = (bot,_Binds).
@@ -100,8 +99,7 @@ tr(cf(IEnv,case(IExp,Clauses)),cf(FEnv,Exp)) :-
   format_values(IExp,VExps),
   tr_list(IEnv,VExps,MEnv,MExps),
   match(MEnv,MExps,Clauses,NEnv,NExp),
-  tr(cf(NEnv,NExp),cf(FEnv,FExp)),
-  ite(FEnv,FExp,Exp).
+  tr(cf(NEnv,NExp),cf(FEnv,Exp)).
 
 %% (Apply)
 tr(cf(IEnv,apply(FName,IExps)),cf(FEnv3,Exp)) :-
@@ -112,9 +110,8 @@ tr(cf(IEnv,apply(FName,IExps)),cf(FEnv3,Exp)) :-
   tr_list(IEnv,IExps,FEnv,FExps),
   zip_binds(Pars,FExps,AppBinds),
   FEnv = (Error,Binds),
-  tr(cf((Error,AppBinds),FunBody),cf((Error2,_),FExp)),
-  FEnv3 = (Error2,Binds),
-  ite(FEnv3,FExp,Exp).
+  tr(cf((Error,AppBinds),FunBody),cf((Error2,_),Exp)),
+  FEnv3 = (Error2,Binds).
 
 %% (Call1)
 tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv2,error(badarith))) :-
@@ -142,8 +139,7 @@ tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Exp)) :-
   types(Atom,Fname,CTypes),
   types(FExps,ETypes),
   CTypes = ETypes,
-  bif(Atom,Fname,FExps,CRes),
-  ite(FEnv,CRes,Exp).
+  bif(Atom,Fname,FExps,Exp).
 
 %% (Primop)
 tr(cf(IEnv,primop(lit(atom,match_fail),_)),cf(FEnv,error(match_fail))) :-
