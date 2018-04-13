@@ -1,6 +1,6 @@
 :- include('match').
 
-:- discontiguous tr/2.
+:- discontiguous btr/4.
 
 %% init(mod,fun,args,env,app)
 %% initializes fun (from mod) application
@@ -17,131 +17,127 @@ init(Mod,(Fun,Arity),Args,Env,App) :-
 %% run(mod,fun,args,final_env,final_exp)
 %% evaluates fun (from mod) application and
 %% returns the final environment and expression
-run(Mod,(Fun,Arity),Args,FEnv,FExp) :-
-  is_list(Args),
-  length(Args,Arity),
+bounded_run(Mod,(Fun,Arity),Bound,Args,FEnv,FExp) :-
   init(Mod,(Fun,Arity),Args,IEnv,IApp),
-  tr(cf(IEnv,IApp),cf(FEnv,FExp)).
-%
-run(_,(_,Arity),Args,[],[]) :-
-  is_list(Args),
-  length(Args,NArgs),
-  Arity \== NArgs.
-%
-run(Mod,(Fun,Arity),Args,FEnv,FExp) :-
-  var(Args),
-  init(Mod,(Fun,Arity),Args,IEnv,IApp),
-  tr(cf(IEnv,IApp),cf(FEnv,FExp)).
+  btr(Bound,cf(IEnv,IApp),_,cf(FEnv,FExp)).
 
 %% tr_list(init_env,init_exps,final_env,final_exps)
 %% evaluates a list of transitions (from exp to exp) and
 %% returns the final environment and expressions
-tr_list(IEnv,[],IEnv,[]).
-tr_list(IEnv,[IExp|IExps],FEnv,[FExp|FExps]) :-
-  tr(cf(IEnv,IExp),cf(NEnv,FExp)),
-  tr_list(NEnv,IExps,FEnv,FExps).
+tr_list(B1,IEnv,[],B1,IEnv,[]).
+tr_list(B1,IEnv,[IExp|IExps],B3,FEnv,[FExp|FExps]) :-
+  btr(B1,cf(IEnv,IExp),B2,cf(NEnv,FExp)),
+  tr_list(B2,NEnv,IExps,B3,FEnv,FExps).
 
 %% (Error) ---------------------------------------------------------------------
-tr(cf(Env,Exp),cf(Env,Exp)) :-
-  Env = (bot,_).
+btr(B1,cf(Env,Exp),B2,cf(Env,Exp)) :-
+  Env = (bot,_),
+  B1 > 0, B2 is B1 - 1.
 
 %% Values ----------------------------------------------------------------------
 %% (Lit)
-tr(cf(Env,lit(Type,Val)),cf(Env,lit(Type,Val))) :-
-  Env = (top,_).
+btr(B1,cf(Env,lit(Type,Val)),B2,cf(Env,lit(Type,Val))) :-
+  Env = (top,_),
+  B1 > 0, B2 is B1 - 1.
 
 %% (Var)
-tr(cf(Env,var(Var)),cf(FEnv,Val)) :-
+btr(B1,cf(Env,var(Var)),B2,cf(FEnv,Val)) :-
   Env  = (top,BindsIn),
+  B1 > 0, B2 is B1 - 1,
   var_binding(Var,BindsIn,Val,BindsOut),
   FEnv = (top,BindsOut).
 
 %% (Cons)
-tr(cf(IEnv,cons(IExp1,IExp2)),cf(FEnv,Exp)) :-
+btr(B1,cf(IEnv,cons(IExp1,IExp2)),B4,(FEnv,Exp)) :-
   IEnv = (top,_),
-  tr(cf(IEnv,IExp1),cf(MEnv,FExp1)),
-  tr(cf(MEnv,IExp2),cf(FEnv,FExp2)),
+  B1 > 0, B2 is B1 - 1,
+  btr(B2,cf(IEnv,IExp1),B3,cf(MEnv,FExp1)),
+  btr(B3,cf(MEnv,IExp2),B4,cf(FEnv,FExp2)),
   Exp = cons(FExp1,FExp2).
 
 %% (Tuple)
-tr(cf(IEnv,tuple(IExps)),cf(FEnv,Exp)) :-
+btr(B1,cf(IEnv,tuple(IExps)),B3,cf(FEnv,Exp)) :-
   IEnv = (top,_),
-  tr_list(IEnv,IExps,FEnv,FExps),
+  B1 > 0, B2 is B1 - 1,
+  tr_list(B2,IEnv,IExps,B3,FEnv,FExps),
   Exp = tuple(FExps).
 
 %% (Let) -----------------------------------------------------------------------
-tr(cf(IEnv,let(Vars,IExp1,IExp2)),FCf) :-
+btr(B1,cf(IEnv,let(Vars,IExp1,IExp2)),B4,FCf) :-
   IEnv = (top,_),
-  tr(cf(IEnv,IExp1),cf(MEnv,FExp1)),
-  let_cont(MEnv,let(Vars,FExp1,IExp2), FCf).
+  B1 > 0, B2 is B1 - 1,
+  btr(B2,cf(IEnv,IExp1),B3,cf(MEnv,FExp1)),
+  let_cont(B3,MEnv,let(Vars,FExp1,IExp2),B4,FCf).
 % the evaluation of IExp1 succeeds
-let_cont(MEnv,let(Vars,FExp1,IExp2),cf(FEnv,Exp)) :-
+let_cont(B1,MEnv,let(Vars,FExp1,IExp2),B2,cf(FEnv,Exp)) :-
   MEnv = (top,MBinds),
   zip_binds(Vars,[FExp1],ABinds),
   append(MBinds,ABinds,LBinds),
   LEnv = (top,LBinds),
-  tr(cf(LEnv,IExp2),cf(FEnv,Exp)).
+  btr(B1,cf(LEnv,IExp2),B2,cf(FEnv,Exp)).
 % the evaluation of IExp1 fails
-let_cont(MEnv,let(_Vars,FExp,_IExp),cf(MEnv,FExp)) :-
+let_cont(B1,MEnv,let(_Vars,FExp,_IExp),B1,cf(MEnv,FExp)) :-
   MEnv = (bot,_Binds).
 
 %% (Case) ----------------------------------------------------------------------
-tr(cf(IEnv,case(IExp,Clauses)),cf(FEnv,Exp)) :-
+btr(B1,cf(IEnv,case(IExp,Clauses)),B5,cf(FEnv,Exp)) :-
   IEnv = (top,_),
+  B1 > 0, B2 is B1 - 1,
   format_values(IExp,VExps),
-  tr_list(IEnv,VExps,MEnv,MExps),
-  match(MEnv,MExps,Clauses,NEnv,NExp),
-  tr(cf(NEnv,NExp),cf(FEnv,Exp)).
+  tr_list(B2,IEnv,VExps,B3,MEnv,MExps),
+  match(B3,MEnv,MExps,Clauses,B4,NEnv,NExp),
+  btr(B4,cf(NEnv,NExp),B5,cf(FEnv,Exp)).
 
 %% (Apply) ---------------------------------------------------------------------
-tr(cf(IEnv,apply(FName,IExps)),cf(FEnv3,Exp)) :-
+btr(B1,cf(IEnv,apply(FName,IExps)),B4,cf(FEnv3,Exp)) :-
   IEnv = (top,_),
+  B1 > 0, B2 is B1 - 1,
   % TODO: Pass module here
   fun_lookup(lit(atom,any),FName,FunDef),
   FunDef = fun(Pars,FunBody),
-  tr_list(IEnv,IExps,FEnv,FExps),
+  tr_list(B2,IEnv,IExps,B3,FEnv,FExps),
   zip_binds(Pars,FExps,AppBinds),
   FEnv = (Error,Binds),
-  tr(cf((Error,AppBinds),FunBody),cf((Error2,_),Exp)),
+  btr(B3,cf((Error,AppBinds),FunBody),B4,cf((Error2,_),Exp)),
   FEnv3 = (Error2,Binds).
 
 %% (Call1) ---------------------------------------------------------------------
-tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv2,error(badarith))) :-
+btr(B1,cf(IEnv,call(Atom,Fname,IExps)),B3,FCf) :-
   IEnv = (top,_),
-  tr_list(IEnv,IExps,FEnv,FExps),
+  B1 > 0, B2 is B1 - 1,
+  tr_list(B2,IEnv,IExps,B3,FEnv,FExps),
+  call_cont(Atom,Fname,FEnv,FExps,FCf).
+% (Call1)
+call_cont(Atom,Fname,FEnv1,FExps,cf(FEnv2,error(badarith))) :-
   types(Atom,Fname,CTypes),
   types(FExps,ETypes),
   dif(CTypes,ETypes),
-  FEnv = (_,Binds),
+  FEnv1 = (_St,Binds),
   FEnv2 = (bot,Binds).
-
-%% (Call2)
-tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,error(bad_arg))) :-
-  IEnv = (top,_),
-  tr_list(IEnv,IExps,FEnv,FExps),
+% (Call2)
+call_cont(Atom,Fname,FEnv,FExps,cf(FEnv,error(bad_arg))) :-
   types(Atom,Fname,CTypes),
   types(FExps,ETypes),
   CTypes = ETypes,
   bif(Atom,Fname,FExps,bad_arg).
-
-%% (Call3)
-tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Exp)) :-
-  IEnv = (top,_),
-  tr_list(IEnv,IExps,FEnv,FExps),
+% (Call3)
+call_cont(Atom,Fname,FEnv,FExps,cf(FEnv,Exp)) :-
   types(Atom,Fname,CTypes),
   types(FExps,ETypes),
   CTypes = ETypes,
   bif(Atom,Fname,FExps,Exp).
 
 %% (Primop) --------------------------------------------------------------------
-tr(cf(IEnv,primop(lit(atom,match_fail),_)),cf(FEnv,error(match_fail))) :-
+btr(B1,cf(IEnv,primop(lit(atom,match_fail),_)),B2,cf(FEnv,error(match_fail))) :-
   IEnv = (top,Binds),
+  B1 > 0, B2 is B1 - 1,
   FEnv = (bot,Binds).
 
 %% (Try) -----------------------------------------------------------------------
-tr(cf(IEnv,try(Arg,Vars,Body,EVars,Handler)),cf(FEnv,Exp)) :-
+btr(B1,cf(IEnv,try(Arg,Vars,Body,EVars,Handler)),B4,cf(FEnv,Exp)) :-
   IEnv = (top,_),
-  tr(cf(IEnv,Arg),cf(MEnv,MExp)),
+  B1 > 0, B2 is B1 - 1,
+  btr(B2,cf(IEnv,Arg),B3,cf(MEnv,MExp)),
   StdVarsBody = (Vars,Body),
   ErrVarsBody = (EVars,Handler),
-  try_vars_body(IEnv,MEnv,MExp,StdVarsBody,ErrVarsBody,FEnv,Exp).
+  try_vars_body(B3,IEnv,MEnv,MExp,StdVarsBody,ErrVarsBody,B4,FEnv,Exp).
