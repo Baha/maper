@@ -48,8 +48,9 @@ match_pat(B1,Env,Val,var(Var),B1,FEnv,true) :-
   FEnv = (St,BindsOut).
 match_pat(B1,Env,Exp,Pat,B2,Env,false) :-
   btr(B1,cf(Env,Pat),B2,cf(_NEnv,EPat)),
+  %\+ subsumes(EPat,Exp),
   \+ subsumes_term(EPat,Exp),
-  dif(Exp,Pat).
+  dif(Exp,EPat).
 
 %% match_guard(env,exp,result)
 %% returns true if guard evaluates to true

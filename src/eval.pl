@@ -1,6 +1,32 @@
 :- include('match').
 
+:- use_module(library(lists)).
+:- use_module(library(terms)).
+
 :- discontiguous btr/4.
+
+%% bounded_int_lst(ls)
+bounded_int_list(L,B) :-
+  B >= 0,
+  int_list(L,B).
+bounded_int_list(L,B) :-
+  B > 0, B1 is B - 1,
+  bounded_int_list(L,B1).
+
+%% int_lst(iL,len)
+%% iL is a list of integers of length len
+int_list(lit(list,nil),0).
+int_list(cons(Hd,Tl),Len) :-
+  Len > 0, Len1 is Len - 1,
+  Hd = lit(int,_V),
+  int_list(Tl,Len1).
+
+%% bounded_run(mod,fun,bound,args,final_env,final_exp)
+%% evaluates fun (from mod) application and
+%% returns the final environment and expression
+bounded_run(Mod,(Fun,Arity),Bound,Args,FEnv,FExp) :-
+  init(Mod,(Fun,Arity),Args,IEnv,IApp),
+  btr(Bound,cf(IEnv,IApp),_,cf(FEnv,FExp)).
 
 %% init(mod,fun,args,env,app)
 %% initializes fun (from mod) application
@@ -13,13 +39,6 @@ init(Mod,(Fun,Arity),Args,Env,App) :-
   zip_binds(Pars,Args,Binds),
   Env = (top,Binds),
   App = apply(var(Fun,Arity),Pars).
-
-%% run(mod,fun,args,final_env,final_exp)
-%% evaluates fun (from mod) application and
-%% returns the final environment and expression
-bounded_run(Mod,(Fun,Arity),Bound,Args,FEnv,FExp) :-
-  init(Mod,(Fun,Arity),Args,IEnv,IApp),
-  btr(Bound,cf(IEnv,IApp),_,cf(FEnv,FExp)).
 
 %% tr_list(init_env,init_exps,final_env,final_exps)
 %% evaluates a list of transitions (from exp to exp) and
@@ -48,7 +67,7 @@ btr(B1,cf(Env,var(Var)),B2,cf(FEnv,Val)) :-
   FEnv = (top,BindsOut).
 
 %% (Cons)
-btr(B1,cf(IEnv,cons(IExp1,IExp2)),B4,(FEnv,Exp)) :-
+btr(B1,cf(IEnv,cons(IExp1,IExp2)),B4,cf(FEnv,Exp)) :-
   IEnv = (top,_),
   B1 > 0, B2 is B1 - 1,
   btr(B2,cf(IEnv,IExp1),B3,cf(MEnv,FExp1)),
@@ -68,6 +87,7 @@ btr(B1,cf(IEnv,let(Vars,IExp1,IExp2)),B4,FCf) :-
   B1 > 0, B2 is B1 - 1,
   btr(B2,cf(IEnv,IExp1),B3,cf(MEnv,FExp1)),
   let_cont(B3,MEnv,let(Vars,FExp1,IExp2),B4,FCf).
+
 % the evaluation of IExp1 succeeds
 let_cont(B1,MEnv,let(Vars,FExp1,IExp2),B2,cf(FEnv,Exp)) :-
   MEnv = (top,MBinds),
@@ -101,30 +121,30 @@ btr(B1,cf(IEnv,apply(FName,IExps)),B4,cf(FEnv3,Exp)) :-
   btr(B3,cf((Error,AppBinds),FunBody),B4,cf((Error2,_),Exp)),
   FEnv3 = (Error2,Binds).
 
-%% (Call1) ---------------------------------------------------------------------
+%% (Call) ----------------------------------------------------------------------
 btr(B1,cf(IEnv,call(Atom,Fname,IExps)),B3,FCf) :-
   IEnv = (top,_),
   B1 > 0, B2 is B1 - 1,
   tr_list(B2,IEnv,IExps,B3,FEnv,FExps),
-  call_cont(Atom,Fname,FEnv,FExps,FCf).
-% (Call1)
-call_cont(Atom,Fname,FEnv1,FExps,cf(FEnv2,error(badarith))) :-
   types(Atom,Fname,CTypes),
   types(FExps,ETypes),
+  call_cont(Atom,Fname,CTypes,FEnv,FExps,ETypes,FCf).
+
+% (Call1 - arithmetic error)
+call_cont(_Atom,_Fname,CTypes,FEnv1,_FExps,ETypes,cf(FEnv2,error(badarith))) :-
   dif(CTypes,ETypes),
   FEnv1 = (_St,Binds),
   FEnv2 = (bot,Binds).
-% (Call2)
-call_cont(Atom,Fname,FEnv,FExps,cf(FEnv,error(bad_arg))) :-
-  types(Atom,Fname,CTypes),
-  types(FExps,ETypes),
+% (Call2 - execute bif)
+call_cont(Atom,Fname,CTypes,FEnv,FExps,ETypes,cf(FEnv,Exp)) :-
   CTypes = ETypes,
+  call_cont_bif(Atom,Fname,FExps,Exp).
+
+% (Call2.1 - bif terminates erroneously)
+call_cont_bif(Atom,Fname,FExps,error(bad_arg)) :-
   bif(Atom,Fname,FExps,bad_arg).
-% (Call3)
-call_cont(Atom,Fname,FEnv,FExps,cf(FEnv,Exp)) :-
-  types(Atom,Fname,CTypes),
-  types(FExps,ETypes),
-  CTypes = ETypes,
+% (Call2.2 - bif terminates correctly)
+call_cont_bif(Atom,Fname,FExps,Exp) :-
   bif(Atom,Fname,FExps,Exp).
 
 %% (Primop) --------------------------------------------------------------------

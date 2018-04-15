@@ -6,7 +6,7 @@ run(factorial,(fact,1),[lit(int,3)],X,Y).
 run(odd,(odd,1),[lit(int,2)],X,Y).
 run(sum,(main,2),[lit(int,2),lit(int,1)],X,Y).
 run(sum_tuple,(main,2),[lit(int,1),lit(int,2)],X,Y).
-run(sum_list,(main,1),[cons(lit(int,1),cons(lit(int,2),lit(nil,[])))],X,Y).
+run(sum_list,(main,1),[cons(lit(int,1),cons(lit(int,2),lit(list,nil)))],X,Y).
 run(sign,(main,1),[lit(int,2)],X,Y).
 run(weird_fun,(weird,1),[lit(int,1)],X,Y).
 
