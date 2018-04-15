@@ -49,7 +49,7 @@ match_pat(Env,Val,var(Var),FEnv,true) :-
 match_pat(Env,Exp,Pat,Env,false) :-
   tr(cf(Env,Pat),cf(_NEnv,EPat)),
   \+ subsumes_term(EPat,Exp),
-  dif(Exp,Pat).
+  dif(Exp,EPat).
 
 %% match_guard(env,exp,result)
 %% returns true if guard evaluates to true
