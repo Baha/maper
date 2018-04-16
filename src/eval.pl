@@ -6,7 +6,7 @@
 :- discontiguous btr/4.
 
 %% bounded_int_lst(ls)
-bounded_int_list(L,B) :-
+bounded_int_list([L],B) :-
   B >= 0,
   int_list(L,B).
 bounded_int_list(L,B) :-
