@@ -19,3 +19,6 @@ run(sign,(main,1),[lit(int,L)],X,Y).
 run(weird_fun,(weird,1),[Z],X,Y).
 run(cases_primop_tuple,(main,1),[tuple([lit(int,A),lit(int,B)])],X,Y).
 run(cases_primop_tuple,(main,1),[Z],X,Y).
+
+% bounded symbolic
+B=100, bounded_int_list(L,B), bounded_run(sum_list,(main,1),B,L,_X,R), R = error(Err).

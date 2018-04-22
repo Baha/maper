@@ -129,12 +129,12 @@ btr(B1,cf(IEnv,call(Atom,Fname,IExps)),FCf) :-
 
 % (Call1 - arithmetic error)
 call_cont(_Atom,_Fname,CTypes,FEnv1,_FExps,ETypes,cf(FEnv2,error(badarith))) :-
-  dif(CTypes,ETypes),
+  diftypes(ETypes,CTypes),
   FEnv1 = (_St,Binds),
   FEnv2 = (bot,Binds).
 % (Call2 - execute bif)
 call_cont(Atom,Fname,CTypes,FEnv,FExps,ETypes,cf(FEnv,Exp)) :-
-  CTypes = ETypes,
+  subtypes(ETypes,CTypes),
   call_cont_bif(Atom,Fname,FExps,Exp).
 
 % (Call2.1 - bif terminates erroneously)
