@@ -123,8 +123,10 @@ btr(B1,cf(IEnv,call(Atom,Fname,IExps)),FCf) :-
   IEnv = (top,_),
   B1 > 0, B2 is B1 - 1,
   tr_list(B2,IEnv,IExps,FEnv,FExps),
-  types(Atom,Fname,CTypes),
-  types(FExps,ETypes),
+  types(Atom,Fname,CTypes), % types of Atom (arithmetic or relationa operators)
+  types(FExps,ETypes),      % types of FExps (expressions)
+  % - CTypes is a list of elements in {number,atom} (***)
+  % - ETypes is a list of elements in {int,float,number,atom}
   call_cont(Atom,Fname,CTypes,FEnv,FExps,ETypes,FCf).
 
 % (Call1 - arithmetic error)
@@ -134,7 +136,7 @@ call_cont(_Atom,_Fname,CTypes,FEnv1,_FExps,ETypes,cf(FEnv2,error(badarith))) :-
   FEnv2 = (bot,Binds).
 % (Call2 - execute bif)
 call_cont(Atom,Fname,CTypes,FEnv,FExps,ETypes,cf(FEnv,Exp)) :-
-  subtypes(ETypes,CTypes),
+  subtypes(ETypes,CTypes), % see notes above (***)
   call_cont_bif(Atom,Fname,FExps,Exp).
 
 % (Call2.1 - bif terminates erroneously)
