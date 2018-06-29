@@ -126,7 +126,7 @@ btr(B1,cf(IEnv,call(Atom,Fname,IExps)),FCf) :-
   types(Atom,Fname,CTypes), % types of Atom (arithmetic or relationa operators)
   types(FExps,ETypes),      % types of FExps (expressions)
   % - CTypes is a list of elements in {number,atom} (***)
-  % - ETypes is a list of elements in {int,float,number,atom}
+  % - ETypes is a list of elements in {int,float,atom}
   call_cont(Atom,Fname,CTypes,FEnv,FExps,ETypes,FCf).
 
 % (Call1 - arithmetic error)

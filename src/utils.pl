@@ -41,7 +41,7 @@ try_vars_body(B1,_IEnv,MEnv,MExp,(CVars,CBody),_,FEnv,Exp) :-
   btr(B1,cf(MEnv,CaseExp),cf(FEnv,Exp)).
 
 %% type(term,type)
-%% returns the type of term
+%% returns the type of term (Type is in {int,float,atom})
 type(lit(Type,_),Type).
 
 %% types(terms,type)
@@ -54,61 +54,53 @@ types([Term|Terms],[Type|Types]) :-
 %% types(mod,fun,types)
 %% returns the expected types for a given BIF
 types(lit(atom,erlang),lit(atom,Op), [T1,T2]) :-
-  rop(Op),
+  memberchk(Op,['==','/=','=<','<','>=','>','=:=','=/=']),
   member(T1,[number,atom]), member(T2,[number,atom]).
 types(lit(atom,erlang),lit(atom,Op), [T1,T2]) :-
-  aop(Op),
+  memberchk(Op,['+','-','*','/']),
   T1 = number, T2 = number.
 
-% ASSUMPTION: aop and rop are always called with Op ground
-% arithmetic operators
-aop(Op) :- memberchk(Op,['+','-','*','/']).
-% relational operators
-rop(Op) :- memberchk(Op,['==','/=','=<','<','>=','>','=:=','=/=']).
-
-:- discontiguous bif/4.
 %% bif(mod,fun,inputs,outputs)
 %% emulates the execution of a given BIF
-
-%% atoms comparisons
-bif(lit(atom,erlang),lit(atom,'=='),[X,X], lit(atom,true) ).
-bif(lit(atom,erlang),lit(atom,'=='),[X,Y], lit(atom,false)) :- dif(X,Y).
-bif(lit(atom,erlang),lit(atom,'/='),[X,Y], lit(atom,true) ) :- dif(X,Y).
-bif(lit(atom,erlang),lit(atom,'/='),[X,X], lit(atom,false)).
 %% '=:=' and '=/=' are exact comparisons (i.e., 2.0 =:= 2 is false)
-bif(lit(atom,erlang),lit(atom,'=:='),[X,X], lit(atom,true) ).
-bif(lit(atom,erlang),lit(atom,'=:='),[X,Y], lit(atom,false)) :- dif(X,Y).
-bif(lit(atom,erlang),lit(atom,'=/='),[X,Y], lit(atom,true) ) :- dif(X,Y).
-bif(lit(atom,erlang),lit(atom,'=/='),[X,X], lit(atom,false)).
-%% numbers comparisons
-bif(lit(atom,erlang),lit(atom,Op),[lit(T1,X),lit(T2,Y)], lit(atom,Res)) :-
-  rop(Op), subtype(T1,number), subtype(T2,number), bif_rop(Op,X,Y,Res).
-%% number-atom comparisons
+bif(lit(atom,erlang),lit(atom,'=:='),[lit(_,X),lit(_,Y)], lit(atom,true)) :-
+  \+ dif(X,Y).
+bif(lit(atom,erlang),lit(atom,'=:='),[lit(_,X),lit(_,Y)], lit(atom,false)) :-
+  dif(X,Y).
+bif(lit(atom,erlang),lit(atom,'=/='),[lit(_,X),lit(_,Y)], lit(atom,true)) :-
+  dif(X,Y).
+bif(lit(atom,erlang),lit(atom,'=/='),[lit(_,X),lit(_,Y)], lit(atom,false)) :-
+  \+ dif(X,Y).
+%% numbers comparisons (=<,<,>=,>)
+bif(lit(atom,erlang),lit(atom,Op),[lit(T1,X),lit(T2,Y)], lit(atom,true)) :-
+  subtype(T1,number), subtype(T2,number),
+  memberchk((Op,ClpOp),
+    [('=<','=<'),('<','<'),('>=','>='),('>','>'),('==','=:='),('/=','=\\=')]),
+  OpCall =.. [ClpOp,X,Y], { OpCall }.
+bif(lit(atom,erlang),lit(atom,Op),[lit(T1,X),lit(T2,Y)], lit(atom,false)) :-
+  subtype(T1,number), subtype(T2,number),
+  memberchk((Op,NClpOp),
+    [('=<','>'),('<','>='),('>=','<'),('>','=<'),('==','=\\='),('/=','=:=')]),
+  OpCall =.. [NClpOp,X,Y], { OpCall }.
+%% number-atom comparisons (=<,<,>=,>)
 bif(lit(atom,erlang),lit(atom,Op),[lit(T1,_X),lit(T2,_Y)], lit(atom,true)) :-
   memberchk(Op,['=<','<','=/=','/=']),
-  subtype(T1,number), subtype(T2,atom).
+  subtype(T1,number), T2 = atom.
 bif(lit(atom,erlang),lit(atom,Op),[lit(T1,_X),lit(T2,_Y)], lit(atom,false)) :-
   memberchk(Op,['>=','>','==','=:=']),
-  subtype(T1,number), subtype(T2,atom).
+  subtype(T1,number), T2 = atom.
 bif(lit(atom,erlang),lit(atom,Op),[lit(T1,_X),lit(T2,_Y)], lit(atom,false)) :-
   memberchk(Op,['=<','<','==','=:=']),
-  subtype(T1,atom), subtype(T2,number).
+  T1 = atom, subtype(T2,number).
 bif(lit(atom,erlang),lit(atom,Op),[lit(T1,_X),lit(T2,_Y)], lit(atom,true)) :-
   memberchk(Op,['>=','>','=/=','/=']),
-  subtype(T1,atom), subtype(T2,number).
-%% arithmetic operations
+  T1 = atom, subtype(T2,number).
+%% arithmetic operations (+,-,*,/)
 bif(lit(atom,erlang),lit(atom,Op),[lit(T1,X),lit(T2,Y)], lit(T3,Z)) :-
-  aop(Op), subtype(T1,number) , subtype(T2,number),
+  memberchk(Op,['+','-','*','/']),
+  subtype(T1,number), subtype(T2,number),
   numerical_literal_res(T1,T2,T3),
   OpCall =.. [Op,X,Y], { Z = OpCall }.
-
-%% clp-based implementation of relational operators
-bif_rop(Op,X,Y,true)  :-
-  OpCall =.. [Op,X,Y], { OpCall }.
-bif_rop(Op,X,Y,false) :-
-  % get the negation NOp of Op
-  memberchk((Op,NOp),[('=<','>'),('<','>='),('>=','<'),('>','=<')]),
-  bif_rop(NOp,X,Y,true).
 
 % assumption: T1 and T2 are ground terms (due to the calls to subtype)
 numerical_literal_res(T1,T2,T3) :-
@@ -117,9 +109,6 @@ numerical_literal_res(T1,T2,T3) :-
 numerical_literal_res(T1,T2,T3) :-
   T1 \== T2, ( T1 == float ; T2 == float ),
   T3 = float.
-numerical_literal_res(T1,T2,T3) :-
-  T1 \== T2, ( T1 == number ; T2 == number ),
-  T3 = number.
 
 %% subtypes(types1,types2)
 %% types1 and types2 are two lists of types of the same length and
@@ -132,22 +121,27 @@ subtypes([T1|T1s],[T2|T2s]) :-
 
 %% subtype(A,B)
 %% A is a subtype of B
-subtype(T,number) :- ( T == int ; T == float ).
-subtype(T,T).
+% number is an alias for int | float
+subtype(S,T) :- ( T = number ; T = int ), S = int.
+subtype(S,T) :- ( T = number ; T = float ), S = float.
+subtype(atom,atom).
 
 %% diftypes(types1,types2)
 %% types1 and types2 are two lists of types that differ in at least one element
+diftypes([T1|_T1s],[number|_T2s]) :-
+  dif(T1,int), dif(T1,float).
+diftypes([T1|_T1s],[atom|_T2s]) :-
+  dif(T1,atom).
 diftypes([T1|T1s],[T2|T2s]) :-
   subtype(T1,T2),
   diftypes(T1s,T2s).
-diftypes([T1|_T1s],[T2|_T2s]) :-
-  dif(T1,T2), \+ subtype(T1,T2). % the order of dif and subtype is relevant
 % test cases for diftypes/2
-% ?- diftypes([number,X],[number,atom]).
-% dif(X, atom) ;
-% false.
 % ?- diftypes([int,X],[number,atom]).
 % dif(X, atom) ;
 % false.
 % ?- diftypes([int,atom],[number,atom]).
 % false.
+% ?- diftypes([int,X],[number,number]).
+% dif(X, float),
+% dif(X, int) ;
+% false

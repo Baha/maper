@@ -36,8 +36,7 @@ match_pats(B1,Env,[Exp|_],[Pat|_],FEnv,false) :-
 
 %% match_pat(init_env,expression,pattern,match_env,result)
 %% matches an expression against a pattern
-match_pat(_B,Env,lit(Type1,Val),lit(Type2,Val),Env,true) :-
-  subtype(Type1,Type2).
+match_pat(_B,Env,lit(Type,Val),lit(Type,Val),Env,true).
 match_pat(B1,Env,tuple(ExpElems),tuple(PatElems),FEnv,true) :-
   match_pats(B1,Env,ExpElems,PatElems,FEnv,true).
 match_pat(B1,Env,cons(ExpHead,ExpTail),cons(PatHead,PatTail),FEnv,true) :-
