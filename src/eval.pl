@@ -25,6 +25,8 @@ int_list(cons(Hd,Tl),Len) :-
 %% evaluates fun (from mod) application and
 %% returns the final environment and expression
 bounded_run(Mod,(Fun,Arity),Bound,Args,FEnv,FExp) :-
+  retractall(fundef(_,_,_)),
+  consult(Mod),
   init(Mod,(Fun,Arity),Args,IEnv,IApp),
   btr(Bound,cf(IEnv,IApp),cf(FEnv,FExp)).
 
@@ -32,8 +34,6 @@ bounded_run(Mod,(Fun,Arity),Bound,Args,FEnv,FExp) :-
 %% initializes fun (from mod) application
 %% with the corresponding environment
 init(Mod,(Fun,Arity),Args,Env,App) :-
-  retractall(fundef(_,_,_)),
-  consult(Mod),
   fun_lookup(lit(atom,Mod),var(Fun,Arity),FunDef),
   FunDef = fun(Pars,_),
   zip_binds(Pars,Args,Binds),
