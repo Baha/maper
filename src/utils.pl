@@ -54,12 +54,10 @@ types([Term|Terms],[Type|Types]) :-
 
 %% types(mod,fun,types)
 %% returns the expected types for a given BIF
-types(lit(atom,erlang),lit(atom,Op), [T1,T2]) :-
-  memberchk(Op,['==','/=','=<','<','>=','>','=:=','=/=']),
-  member(T1,[number,atom]), member(T2,[number,atom]).
-types(lit(atom,erlang),lit(atom,Op), [T1,T2]) :-
-  memberchk(Op,['+','-','*','/']),
-  T1 = number, T2 = number.
+types(lit(atom,erlang),lit(atom,Op), [any,any]) :-
+  memberchk(Op,['==','/=','=<','<','>=','>','=:=','=/=']).
+types(lit(atom,erlang),lit(atom,Op), [number,number]) :-
+  memberchk(Op,['+','-','*','/']).
 
 %% bif(mod,fun,inputs,outputs)
 %% emulates the execution of a given BIF
@@ -123,9 +121,17 @@ subtypes([T1|T1s],[T2|T2s]) :-
 %% subtype(A,B)
 %% A is a subtype of B
 % number is an alias for int | float
-subtype(S,T) :- ( T = number ; T = int ), S = int.
-subtype(S,T) :- ( T = number ; T = float ), S = float.
+subtype(int,  any).
+subtype(float,any).
+subtype(atom, any).
+
+subtype(float,number).
+subtype(int,  number).
+
+subtype(float,float).
+subtype(int,int).
 subtype(atom,atom).
+
 
 %% diftypes(types1,types2)
 %% types1 and types2 are two lists of types that differ in at least one element
