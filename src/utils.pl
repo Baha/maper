@@ -33,13 +33,13 @@ format_values(Exp,[Exp]).
 %%               final_env,final_exp)
 %% auxiliar rule that returns final_env and final_exp
 %% of a try-catch block depending on mid_env's error symbol
-try_vars_body(_B,IEnv,MEnv,_,_,(_ErrVars,ErrBody),IEnv,ErrBody) :-
+try_vars_body(IEnv,MEnv,_,_,(_ErrVars,ErrBody),IEnv,ErrBody) :-
   MEnv = (bot,_).
-try_vars_body(B1,_IEnv,MEnv,MExp,(CVars,CBody),_,FEnv,Exp) :-
+try_vars_body(_IEnv,MEnv,MExp,(CVars,CBody),_,FEnv,Exp) :-
   MEnv = (top,_),
   ClauseExp = [clause(CVars,lit(atom,true),CBody)],
   CaseExp = case(MExp,ClauseExp),
-  btr(B1,cf(MEnv,CaseExp),cf(FEnv,Exp)).
+  tr(cf(MEnv,CaseExp),cf(FEnv,Exp)).
 
 %% type(term,type)
 %% returns the type of term (Type is in {int,float,atom})
