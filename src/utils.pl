@@ -1,5 +1,8 @@
 :- use_module(library(clpq)).
 
+:- discontiguous bif/4.
+
+
 fun_lookup(_,Fun,FunDef) :-
   fundef(_,Fun,FunDef).
 
@@ -41,26 +44,12 @@ try_vars_body(B1,_IEnv,MEnv,MExp,(CVars,CBody),_,FEnv,Exp) :-
   CaseExp = case(MExp,ClauseExp),
   btr(B1,cf(MEnv,CaseExp),cf(FEnv,Exp)).
 
-%% type(term,type)
-%% returns the type of term (Type is in {int,float,atom})
-type(lit(Type,_),Type).
-
-%% types(terms,type)
-%% returns the types of a list of terms
-types([],[]).
-types([Term|Terms],[Type|Types]) :-
-  type(Term,Type),
-  types(Terms,Types).
-
-%% types(mod,fun,types)
-%% returns the expected types for a given BIF
-types(lit(atom,erlang),lit(atom,Op), [any,any]) :-
-  memberchk(Op,['==','/=','=<','<','>=','>','=:=','=/=']).
-types(lit(atom,erlang),lit(atom,Op), [number,number]) :-
-  memberchk(Op,['+','-','*','/']).
-
 %% bif(mod,fun,inputs,outputs)
 %% emulates the execution of a given BIF
+
+% Term Comparisons -------------------------------------------------------------
+% http://erlang.org/doc/reference_manual/expressions.html#term-comparisons
+
 %% '=:=' and '=/=' are exact comparisons (i.e., 2.0 =:= 2 is false)
 bif(lit(atom,erlang),lit(atom,'=:='),[lit(_,X),lit(_,Y)], lit(atom,true)) :-
   \+ dif(X,Y).
@@ -70,85 +59,73 @@ bif(lit(atom,erlang),lit(atom,'=/='),[lit(_,X),lit(_,Y)], lit(atom,true)) :-
   dif(X,Y).
 bif(lit(atom,erlang),lit(atom,'=/='),[lit(_,X),lit(_,Y)], lit(atom,false)) :-
   \+ dif(X,Y).
-%% numbers comparisons (=<,<,>=,>)
+
+%% number-number comparisons ('=<','<','>=','>','==','/=')
 bif(lit(atom,erlang),lit(atom,Op),[lit(T1,X),lit(T2,Y)], lit(atom,true)) :-
-  subtype(T1,number), subtype(T2,number),
+  number_type(T1), number_type(T2),
   memberchk((Op,ClpOp),
     [('=<','=<'),('<','<'),('>=','>='),('>','>'),('==','=:='),('/=','=\\=')]),
   OpCall =.. [ClpOp,X,Y], { OpCall }.
 bif(lit(atom,erlang),lit(atom,Op),[lit(T1,X),lit(T2,Y)], lit(atom,false)) :-
-  subtype(T1,number), subtype(T2,number),
+  number_type(T1), number_type(T2),
   memberchk((Op,NClpOp),
     [('=<','>'),('<','>='),('>=','<'),('>','=<'),('==','=\\='),('/=','=:=')]),
   OpCall =.. [NClpOp,X,Y], { OpCall }.
-%% number-atom comparisons (=<,<,>=,>)
+
+%% number-atom comparisons ('=<','<','>=','>','==','/=')
 bif(lit(atom,erlang),lit(atom,Op),[lit(T1,_X),lit(T2,_Y)], lit(atom,true)) :-
   memberchk(Op,['=<','<','=/=','/=']),
-  subtype(T1,number), T2 = atom.
+  number_type(T1), T2 = atom.
 bif(lit(atom,erlang),lit(atom,Op),[lit(T1,_X),lit(T2,_Y)], lit(atom,false)) :-
   memberchk(Op,['>=','>','==','=:=']),
-  subtype(T1,number), T2 = atom.
+  number_type(T1), T2 = atom.
+
+%% atom-number comparisons ('=<','<','>=','>','==','/=')
 bif(lit(atom,erlang),lit(atom,Op),[lit(T1,_X),lit(T2,_Y)], lit(atom,false)) :-
   memberchk(Op,['=<','<','==','=:=']),
-  T1 = atom, subtype(T2,number).
+  T1 = atom, number_type(T2).
 bif(lit(atom,erlang),lit(atom,Op),[lit(T1,_X),lit(T2,_Y)], lit(atom,true)) :-
   memberchk(Op,['>=','>','=/=','/=']),
-  T1 = atom, subtype(T2,number).
-%% arithmetic operations (+,-,*,/)
-bif(lit(atom,erlang),lit(atom,Op),[lit(T1,X),lit(T2,Y)], lit(T3,Z)) :-
+  T1 = atom, number_type(T2).
+
+% Arithmetic Expressions -------------------------------------------------------
+% http://erlang.org/doc/reference_manual/expressions.html#arithmetic-expressions
+
+%% binary arithmetic operations (+,-,*,/)
+bif(lit(atom,erlang),lit(atom,Op),[L1,L2], Res) :-
   memberchk(Op,['+','-','*','/']),
-  subtype(T1,number), subtype(T2,number),
-  numerical_literal_res(T1,T2,T3),
-  OpCall =.. [Op,X,Y], { Z = OpCall }.
+  binary_arith_bif_res(L1,Op,L2,Res).
 
-% assumption: T1 and T2 are ground terms (due to the calls to subtype)
-numerical_literal_res(T1,T2,T3) :-
-  T1 == T2,
-  T3 = T1.
-numerical_literal_res(T1,T2,T3) :-
-  T1 \== T2, ( T1 == float ; T2 == float ),
-  T3 = float.
+% result of binary arithmetic operations
+binary_arith_bif_res(lit(T1,X),Op,lit(T2,Y),Res) :-
+  in1_in2_out_abif_types(T1,T2,T3),
+  OpCall =.. [Op,X,Y], { Z = OpCall },
+  Res = lit(T3,Z).
+binary_arith_bif_res(lit(T1,_),__,lit(T2,_),Res) :-
+  dif(T1,N1), number_type(N1),
+  dif(T2,N2), number_type(N2),
+  Res = error(badarith).
 
-%% subtypes(types1,types2)
-%% types1 and types2 are two lists of types of the same length and
-%% forall i, types1[i] is a subtype of types2[i]
-% ASSUMPTION: types2 is a list of elements in {number,atom}
-subtypes([],[]).
-subtypes([T1|T1s],[T2|T2s]) :-
-  subtype(T1,T2),
-  subtypes(T1s,T2s).
+% inputs/output types of arithmetic operations
+in1_in2_out_abif_types(float,int,float).
+in1_in2_out_abif_types(int,float,float).
+in1_in2_out_abif_types(T,T,T) :-
+  number_type(T).
 
-%% subtype(A,B)
-%% A is a subtype of B
-% number is an alias for int | float
-subtype(int,  any).
-subtype(float,any).
-subtype(atom, any).
+%% unary arithmetic operations (+,-)
+bif(lit(atom,erlang),lit(atom,Op),[Lit], Res) :-
+  memberchk(Op,['+','-']),
+  unary_arith_bif_res(Op,Lit,Res).
 
-subtype(float,number).
-subtype(int,  number).
+% result of unary arithmetic operations
+unary_arith_bif_res(Op,lit(T,X),Res) :-
+  number_type(T),
+  OpCall =.. [Op,X], { Z = OpCall },
+  Res = lit(T,Z).
+unary_arith_bif_res(__,lit(T,_),Res) :-
+  dif(T,N), number_type(N),
+  Res = error(badarith).
 
-subtype(float,float).
-subtype(int,int).
-subtype(atom,atom).
-
-
-%% diftypes(types1,types2)
-%% types1 and types2 are two lists of types that differ in at least one element
-diftypes([T1|_T1s],[number|_T2s]) :-
-  dif(T1,int), dif(T1,float).
-diftypes([T1|_T1s],[atom|_T2s]) :-
-  dif(T1,atom).
-diftypes([T1|T1s],[T2|T2s]) :-
-  subtype(T1,T2),
-  diftypes(T1s,T2s).
-% test cases for diftypes/2
-% ?- diftypes([int,X],[number,atom]).
-% dif(X, atom) ;
-% false.
-% ?- diftypes([int,atom],[number,atom]).
-% false.
-% ?- diftypes([int,X],[number,number]).
-% dif(X, float),
-% dif(X, int) ;
-% false
+%
+number_type(float).
+number_type(int).
