@@ -119,11 +119,13 @@ btr(B1,cf(IEnv,apply(FName,IExps)),cf(FEnv3,Exp)) :-
   FEnv3 = (Error2,Binds).
 
 %% (Call) ----------------------------------------------------------------------
-btr(B1,cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Res)) :-
+btr(B1,cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv1,Res)) :-
   IEnv = (top,_),
   B1 > 0, B2 is B1 - 1,
   tr_list(B2,IEnv,IExps,FEnv,FExps),
-  bif(Atom,Fname,FExps, Res).
+  FEnv = (EFl,Binds),
+  bif(Atom,Fname,EFl,FExps, EFl1,Res),
+  FEnv1 = (EFl1,Binds).
 
 %% (Primop) --------------------------------------------------------------------
 btr(_B,cf(IEnv,primop(lit(atom,match_fail),_)),cf(FEnv,error(match_fail))) :-
