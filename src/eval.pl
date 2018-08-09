@@ -6,18 +6,23 @@
 :- discontiguous tr/2.
 
 %% run(mod,fun,args,final_env,final_exp)
-%% evaluates fun (from mod) application and
-%% returns the final environment and expression
+%% loads mod and evaluates fun (from mod)
 run(Mod,(Fun,Arity),Args,FEnv,FExp) :-
   retractall(fundef(_,_,_)),
   consult(Mod),
-  init(Mod,(Fun,Arity),Args,IEnv,IApp),
+  eval(Mod,Fun/Arity,Args,FEnv,FExp).
+
+%% eval(mod,fun,args,final_env,final_exp)
+%% evaluates fun (from mod) application and
+%% returns the final environment and expression
+eval(Mod,Fun,Args,FEnv,FExp) :-
+  init(Mod,Fun,Args,IEnv,IApp),
   tr(cf(IEnv,IApp),cf(FEnv,FExp)).
 
 %% init(mod,fun,args,env,app)
 %% initializes fun (from mod) application
 %% with the corresponding environment
-init(Mod,(Fun,Arity),Args,Env,App) :-
+init(Mod,Fun/Arity,Args,Env,App) :-
   fun_lookup(lit(atom,Mod),var(Fun,Arity),FunDef),
   FunDef = fun(Pars,_),
   zip_binds(Pars,Args,Binds),
@@ -98,31 +103,10 @@ tr(cf(IEnv,apply(FName,IExps)),cf(FEnv3,Exp)) :-
   FEnv3 = (Error2,Binds).
 
 %% (Call) ----------------------------------------------------------------------
-tr(cf(IEnv,call(Atom,Fname,IExps)),FCf) :-
+tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Res)) :-
   IEnv = (top,_),
   tr_list(IEnv,IExps,FEnv,FExps),
-  types(Atom,Fname,CTypes), % types of Atom (arithmetic or relationa operators)
-  types(FExps,ETypes),      % types of FExps (expressions)
-  % - CTypes is a list of elements in {number,atom} (***)
-  % - ETypes is a list of elements in {int,float,atom}
-  call_cont(Atom,Fname,CTypes,FEnv,FExps,ETypes,FCf).
-
-% (Call1 - arithmetic error)
-call_cont(_Atom,_Fname,CTypes,FEnv1,_FExps,ETypes,cf(FEnv2,error(badarith))) :-
-  diftypes(ETypes,CTypes),
-  FEnv1 = (_St,Binds),
-  FEnv2 = (bot,Binds).
-% (Call2 - execute bif)
-call_cont(Atom,Fname,CTypes,FEnv,FExps,ETypes,cf(FEnv,Exp)) :-
-  subtypes(ETypes,CTypes), % see notes above (***)
-  call_cont_bif(Atom,Fname,FExps,Exp).
-
-% (Call2.1 - bif terminates erroneously)
-call_cont_bif(Atom,Fname,FExps,error(bad_arg)) :-
-  bif(Atom,Fname,FExps,bad_arg).
-% (Call2.2 - bif terminates correctly)
-call_cont_bif(Atom,Fname,FExps,Exp) :-
-  bif(Atom,Fname,FExps,Exp).
+  bif(Atom,Fname,FExps, Res).
 
 %% (Primop) --------------------------------------------------------------------
 tr(cf(IEnv,primop(lit(atom,match_fail),_)),cf(FEnv,error(match_fail))) :-
@@ -136,3 +120,16 @@ tr(cf(IEnv,try(Arg,Vars,Body,EVars,Handler)),cf(FEnv,Exp)) :-
   StdVarsBody = (Vars,Body),
   ErrVarsBody = (EVars,Handler),
   try_vars_body(IEnv,MEnv,MExp,StdVarsBody,ErrVarsBody,FEnv,Exp).
+
+%% try_vars_body(init_env,mid_env,mid_exp,
+%%               correct_case,error_case,
+%%               final_env,final_exp)
+%% auxiliar rule that returns final_env and final_exp
+%% of a try-catch block depending on mid_env's error symbol
+try_vars_body(IEnv,MEnv,_,_,(_ErrVars,ErrBody),IEnv,ErrBody) :-
+  MEnv = (bot,_).
+try_vars_body(_IEnv,MEnv,MExp,(CVars,CBody),_,FEnv,Exp) :-
+  MEnv = (top,_),
+  ClauseExp = [clause(CVars,lit(atom,true),CBody)],
+  CaseExp = case(MExp,ClauseExp),
+  tr(cf(MEnv,CaseExp),cf(FEnv,Exp)).
