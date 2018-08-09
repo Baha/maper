@@ -103,10 +103,12 @@ tr(cf(IEnv,apply(FName,IExps)),cf(FEnv3,Exp)) :-
   FEnv3 = (Error2,Binds).
 
 %% (Call) ----------------------------------------------------------------------
-tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,Res)) :-
+tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv1,FExps1)) :-
   IEnv = (top,_),
   tr_list(IEnv,IExps,FEnv,FExps),
-  bif(Atom,Fname,FExps, Res).
+  FEnv = (EFl,Binds),
+  bif(Atom,Fname,EFl,FExps, EFl1,FExps1),
+  FEnv1 = (EFl1,Binds).
 
 %% (Primop) --------------------------------------------------------------------
 tr(cf(IEnv,primop(lit(atom,match_fail),_)),cf(FEnv,error(match_fail))) :-
