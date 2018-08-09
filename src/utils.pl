@@ -101,9 +101,11 @@ binary_arith_bif_res(lit(T1,X),Op,lit(T2,Y),Res) :-
   in1_in2_out_abif_types(T1,T2,T3),
   OpCall =.. [Op,X,Y], { Z = OpCall },
   Res = lit(T3,Z).
-binary_arith_bif_res(lit(T1,_),__,lit(T2,_),Res) :-
-  dif(T1,N1), number_type(N1),
-  dif(T2,N2), number_type(N2),
+binary_arith_bif_res(lit(T1,_),_,lit(_,_),Res) :-
+  dif(T1,int), dif(T1,float),
+  Res = error(badarith).
+binary_arith_bif_res(lit(_,_),_,lit(T2,_),Res) :-
+  dif(T2,int), dif(T2,float),
   Res = error(badarith).
 
 % inputs/output types of arithmetic operations
@@ -123,7 +125,7 @@ unary_arith_bif_res(Op,lit(T,X),Res) :-
   OpCall =.. [Op,X], { Z = OpCall },
   Res = lit(T,Z).
 unary_arith_bif_res(__,lit(T,_),Res) :-
-  dif(T,N), number_type(N),
+  dif(T,int), dif(T,float),
   Res = error(badarith).
 
 %
