@@ -87,9 +87,8 @@ cerl2fact(Node) ->
       FactTupleEs = cerl2fact(CoreTupleEs),
       ?TUPLE_PRED(FactTupleEs);
     values ->
-      CoreValList  = cerl:abstract(cerl:values_es(Node)),
-      CoreConsList = cerl:unfold_literal(CoreValList),
-      cerl2fact(CoreConsList);
+      CoreValList = cerl:values_es(Node),
+      cerl2fact(CoreValList);
     'let' ->
       CoreLetVars = cerl:let_vars(Node),
       CoreLetArg  = cerl:let_arg(Node),
