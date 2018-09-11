@@ -100,7 +100,14 @@ cerl2fact(Node) ->
     'case' ->
       CoreCaseArg = cerl:case_arg(Node),
       CoreCaseClauses = cerl:case_clauses(Node),
-      FactCaseArg = cerl2fact(CoreCaseArg),
+      % Convert single case args to sequences to
+      % avoid several cases in the intrepreter
+      CoreValuesCaseArg =
+        case cerl:is_c_values(CoreCaseArg) of
+          true  -> CoreCaseArg;
+          false -> cerl:c_values([CoreCaseArg])
+        end,
+      FactCaseArg = cerl2fact(CoreValuesCaseArg),
       FactCaseClauses = cerl2fact(CoreCaseClauses),
       ?CASE_PRED(FactCaseArg, FactCaseClauses);
     clause ->
