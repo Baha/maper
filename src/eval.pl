@@ -85,8 +85,7 @@ let_cont(MEnv,let(_Vars,FExp,_IExp),cf(MEnv,FExp)) :-
 %% (Case) ----------------------------------------------------------------------
 tr(cf(IEnv,case(IExp,Clauses)),cf(FEnv,Exp)) :-
   IEnv = (top,_),
-  format_values(IExp,VExps),
-  tr_list(IEnv,VExps,MEnv,MExps),
+  tr_list(IEnv,IExp,MEnv,MExps),
   match(MEnv,MExps,Clauses,NEnv,NExp),
   tr(cf(NEnv,NExp),cf(FEnv,Exp)).
 

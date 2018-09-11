@@ -28,11 +28,6 @@ zip_binds([],[],[]).
 zip_binds([var(Par)|RPars],[Val|Vals],[(Par,Val)|RPars1]) :-
   zip_binds(RPars,Vals,RPars1).
 
-%% format_values(exp_in,exp_out)
-%% puts exp_in in a list if it is a single expression
-format_values(values(Exps),Exps).
-format_values(Exp,[Exp]).
-
 %% bif(mod,fun,inputs,outputs)
 %% emulates the execution of a given BIF
 
