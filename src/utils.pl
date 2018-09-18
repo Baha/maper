@@ -118,7 +118,7 @@ in1_in2_abif_wrong_types(_,T2) :-
   dif(T2,int), dif(T2,float).
 
 %% unary arithmetic operations (+,-)
-bif(ErrF,lit(atom,erlang),lit(atom,Op),top,[Lit], ErrF,Res) :-
+bif(lit(atom,erlang),lit(atom,Op),top,[Lit], ErrF,Res) :-
   memberchk(Op,['+','-']),
   unary_arith_bif_res(Op,Lit, ErrF,Res).
 
