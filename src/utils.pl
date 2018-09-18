@@ -1,9 +1,6 @@
 :- use_module(library(clpq)).
 
-:- discontiguous bif/6.
-
-
-bif(_Atom,_Fname,bot,_FExps, bot,_FExps1).
+:- discontiguous bif/4.
 
 fun_lookup(_,Fun,FunDef) :-
   fundef(_,Fun,FunDef).
@@ -33,21 +30,21 @@ zip_binds([var(Par)|RPars],[Val|Vals],[(Par,Val)|RPars1]) :-
 
 % Term Comparisons -------------------------------------------------------------
 % http://erlang.org/doc/reference_manual/expressions.html#term-comparisons
-bif(lit(atom,erlang),lit(atom,'=<'), top,[Lit1,Lit2], top,lit(atom,Z)) :-
+bif(lit(atom,erlang),lit(atom,'=<'), [Lit1,Lit2], lit(atom,Z)) :-
   lte(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'<'),  top,[Lit1,Lit2], top,lit(atom,Z)) :-
+bif(lit(atom,erlang),lit(atom,'<'),  [Lit1,Lit2], lit(atom,Z)) :-
   lt(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'>='), top,[Lit1,Lit2], top,lit(atom,Z)) :-
+bif(lit(atom,erlang),lit(atom,'>='), [Lit1,Lit2], lit(atom,Z)) :-
   gte(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'>'),  top,[Lit1,Lit2], top,lit(atom,Z)) :-
+bif(lit(atom,erlang),lit(atom,'>'),  [Lit1,Lit2], lit(atom,Z)) :-
   gt(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'=='), top,[Lit1,Lit2], top,lit(atom,Z)) :-
+bif(lit(atom,erlang),lit(atom,'=='), [Lit1,Lit2], lit(atom,Z)) :-
   eq(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'/='), top,[Lit1,Lit2], top,lit(atom,Z)) :-
+bif(lit(atom,erlang),lit(atom,'/='), [Lit1,Lit2], lit(atom,Z)) :-
   neq(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'=:='),top,[Lit1,Lit2], top,lit(atom,Z)) :-
+bif(lit(atom,erlang),lit(atom,'=:='),[Lit1,Lit2], lit(atom,Z)) :-
   eeq(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'=/='),top,[Lit1,Lit2], top,lit(atom,Z)) :-
+bif(lit(atom,erlang),lit(atom,'=/='),[Lit1,Lit2], lit(atom,Z)) :-
   eneq(Lit1,Lit2,Z).
 
 % =<
@@ -92,18 +89,16 @@ neeq(Lit1,Lit2,false) :- qeq(Lit1,Lit2,true).
 % http://erlang.org/doc/reference_manual/expressions.html#arithmetic-expressions
 
 %% binary arithmetic operations (+,-,*,/)
-bif(lit(atom,erlang),lit(atom,Op),top,[Lit1,Lit2], ErrF,Res) :-
+bif(lit(atom,erlang),lit(atom,Op),[Lit1,Lit2], Res) :-
   memberchk(Op,['+','-','*','/']),
-  binary_arith_bif_res(Lit1,Op,Lit2, ErrF,Res).
+  binary_arith_bif_res(Lit1,Op,Lit2, Res).
 
 % result of binary arithmetic operations
-binary_arith_bif_res(lit(T1,X),Op,lit(T2,Y), ErrF,Res) :-
+binary_arith_bif_res(lit(T1,X),Op,lit(T2,Y), lit(T3,Z)) :-
   in1_in2_out_abif_types(T1,T2,T3),
-  OpCall =.. [Op,X,Y], { Z = OpCall },
-  ErrF = top, Res = lit(T3,Z).
-binary_arith_bif_res(lit(T1,_),__,lit(T2,_), ErrF,Res) :-
-  in1_in2_abif_wrong_types(T1,T2),
-  ErrF = bot, Res = error(badarith).
+  OpCall =.. [Op,X,Y], { Z = OpCall }.
+binary_arith_bif_res(lit(T1,_),__,lit(T2,_), error(badarith)) :-
+  in1_in2_abif_wrong_types(T1,T2).
 
 % inputs/output types of arithmetic operations
 in1_in2_out_abif_types(float,int,float).
@@ -118,20 +113,16 @@ in1_in2_abif_wrong_types(_,T2) :-
   dif(T2,int), dif(T2,float).
 
 %% unary arithmetic operations (+,-)
-bif(ErrF,lit(atom,erlang),lit(atom,Op),top,[Lit], ErrF,Res) :-
+bif(lit(atom,erlang),lit(atom,Op),[Lit], Res) :-
   memberchk(Op,['+','-']),
-  unary_arith_bif_res(Op,Lit, ErrF,Res).
+  unary_arith_bif_res(Op,Lit, Res).
 
 % result of unary arithmetic operations
-unary_arith_bif_res(Op,lit(T,X), ErrF,Res) :-
+unary_arith_bif_res(Op,lit(T,X), lit(T,Z)) :-
   number_type(T),
-  OpCall =.. [Op,X], { Z = OpCall },
-  ErrF = top,
-  Res = lit(T,Z).
-unary_arith_bif_res(__,lit(T,_), ErrF,Res) :-
-  dif(T,int), dif(T,float),
-  ErrF = bot,
-  Res = error(badarith).
+  OpCall =.. [Op,X], { Z = OpCall }.
+unary_arith_bif_res(__,lit(T,_), error(badarith)) :-
+  dif(T,int), dif(T,float).
 
 %
 number_type(float).
