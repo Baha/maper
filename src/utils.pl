@@ -2,23 +2,6 @@
 
 :- discontiguous bif/4.
 
-fun_lookup(_,Fun,FunDef) :-
-  fundef(_,Fun,FunDef).
-
-%% var_binding(var,env,result,env1)
-%% searches a variable var in environment env and returns its value val
-%% if var belongs to env, otherwise it adds the pair (var,val) to env.
-var_binding(Var,[],Val,[Bind]) :-
-  Bind = (Var,Val).
-var_binding(Var,[Bind|REnv1],Val,[Bind|REnv1]) :-
-  Bind = (Var1,Val1),
-  Var == Var1,
-  Val = Val1.
-var_binding(Var,[Bind|REnv1],Val,[Bind|Renv2]) :-
-  Bind = (Var1,_Val1),
-  Var \== Var1,
-  var_binding(Var,REnv1,Val,Renv2).
-
 %% zip_binds(vars,values,binds)
 %% tuples a list of variables with their values
 zip_binds([],[],[]).
@@ -30,22 +13,14 @@ zip_binds([var(Par)|RPars],[Val|Vals],[(Par,Val)|RPars1]) :-
 
 % Term Comparisons -------------------------------------------------------------
 % http://erlang.org/doc/reference_manual/expressions.html#term-comparisons
-bif(lit(atom,erlang),lit(atom,'=<'), [Lit1,Lit2], lit(atom,Z)) :-
-  lte(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'<'),  [Lit1,Lit2], lit(atom,Z)) :-
-  lt(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'>='), [Lit1,Lit2], lit(atom,Z)) :-
-  gte(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'>'),  [Lit1,Lit2], lit(atom,Z)) :-
-  gt(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'=='), [Lit1,Lit2], lit(atom,Z)) :-
-  eq(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'/='), [Lit1,Lit2], lit(atom,Z)) :-
-  neq(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'=:='),[Lit1,Lit2], lit(atom,Z)) :-
-  eeq(Lit1,Lit2,Z).
-bif(lit(atom,erlang),lit(atom,'=/='),[Lit1,Lit2], lit(atom,Z)) :-
-  eneq(Lit1,Lit2,Z).
+bif(lit(atom,erlang),lit(atom,'=<'), [L1,L2], lit(atom,Z)) :- lte(L1,L2,Z).
+bif(lit(atom,erlang),lit(atom,'<'),  [L1,L2], lit(atom,Z)) :- lt(L1,L2,Z).
+bif(lit(atom,erlang),lit(atom,'>='), [L1,L2], lit(atom,Z)) :- gte(L1,L2,Z).
+bif(lit(atom,erlang),lit(atom,'>'),  [L1,L2], lit(atom,Z)) :- gt(L1,L2,Z).
+bif(lit(atom,erlang),lit(atom,'=='), [L1,L2], lit(atom,Z)) :- eq(L1,L2,Z).
+bif(lit(atom,erlang),lit(atom,'/='), [L1,L2], lit(atom,Z)) :- neq(L1,L2,Z).
+bif(lit(atom,erlang),lit(atom,'=:='),[L1,L2], lit(atom,Z)) :- eeq(L1,L2,Z).
+bif(lit(atom,erlang),lit(atom,'=/='),[L1,L2], lit(atom,Z)) :- eneq(L1,L2,Z).
 
 % =<
 lte(lit(T1,X),lit(T2,Y),true) :- number_type(T1), number_type(T2), { X =< Y }.

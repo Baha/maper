@@ -1,100 +1,95 @@
 :- include('match').
+:- include('utils').
 
 :- use_module(library(lists)).
 :- use_module(library(terms)).
 
-:- discontiguous tr/2.
+:- discontiguous eval/3.
 
 %% run(mod,fun,args,final_env,final_exp)
 %% loads mod and evaluates fun (from mod)
-run(Mod,(Fun,Arity),Args,FEnv,FExp) :-
+run_prog(Mod,(Fun,Arity),Args,FExp) :-
   retractall(fundef(_,_,_)),
   consult(Mod),
-  eval(Mod,Fun/Arity,Args,FEnv,FExp).
+  run(Mod,Fun/Arity,Args,FExp).
 
 %% eval(mod,fun,args,final_env,final_exp)
 %% evaluates fun (from mod) application and
 %% returns the final environment and expression
-eval(Mod,Fun,Args,FEnv,FExp) :-
-  init(Mod,Fun,Args,IEnv,IApp),
-  tr(cf(IEnv,IApp),cf(FEnv,FExp)).
-
-%% init(mod,fun,args,env,app)
-%% initializes fun (from mod) application
-%% with the corresponding environment
-init(Mod,Fun/Arity,Args,Env,apply(var(Fun,Arity),Pars)) :-
-  fun_lookup(lit(atom,Mod),var(Fun,Arity),fun(Pars,_)),
-  zip_binds(Pars,Args,Env).
+run(Mod,Fun/Arity,Args,FExp) :-
+  fundef(lit(atom,Mod),var(Fun,Arity),fun(Pars,_)),
+  zip_binds(Pars,Args,Env),
+  eval(apply(var(Fun,Arity),Pars),Env,FExp).
 
 %% (Error) ---------------------------------------------------------------------
-tr(cf(Env,error(Reason)),cf(Env,error(Reason))).
+eval(error(Reason),_Env,error(Reason)).
 
 %% Values ----------------------------------------------------------------------
 %% (Lit)
-tr(cf(Env,lit(Type,Val)),cf(Env,lit(Type,Val))).
+eval(lit(Type,Val),_Env,lit(Type,Val)).
 %% (Var)
-tr(cf(Env,var(Var)),cf(FEnv,Val)) :-
-  var_binding(Var,Env,Val,FEnv).
+eval(var(Var),Env,Val) :-
+  memberchk((Var,Val),Env).
 %% (Cons)
-tr(cf(IEnv,cons(IExp1,IExp2)),cf(FEnv,cons(FExp1,FExp2))) :-
-  tr(cf(IEnv,IExp1),cf(MEnv,FExp1)),
-  tr(cf(MEnv,IExp2),cf(FEnv,FExp2)).
+eval(cons(IExp1,IExp2),Env,cons(FExp1,FExp2)) :-
+  eval(IExp1,Env,FExp1),
+  eval(IExp2,Env,FExp2).
 %% (Tuple)
-tr(cf(IEnv,tuple([])),cf(IEnv,tuple([]))).
-tr(cf(IEnv,tuple([IExp|IExps])),cf(FEnv,tuple([FExp|FExps]))) :-
-  tr(cf(IEnv,IExp),cf(MEnv,FExp)),
-  tr(cf(MEnv,tuple(IExps)),cf(FEnv,tuple(FExps))).
+eval(tuple([]),_Env,tuple([])).
+eval(tuple([IExp|IExps]),Env,tuple([FExp|FExps])) :-
+  eval(IExp,Env,FExp),
+  eval(tuple(IExps),Env,tuple(FExps)).
 
 %% (Let) -----------------------------------------------------------------------
-tr(cf(IEnv,let([var(Var)],Expr1,Expr2)),FCf) :-
-  tr(cf(IEnv,Expr1),cf(Env1,EExpr1)),
-  let_cont(Env1,Var,EExpr1,Expr2, FCf).
+eval(let([var(Var)],Expr1,Expr2),Env,Expr) :-
+  eval(Expr1,Env,EExpr1),
+  let_cont(Env,Var,EExpr1,Expr2, Expr).
 % the evaluation of Expr1 succeeds
-let_cont(MEnv,Var,EExpr1,Expr2,cf(FEnv,Expr)) :-
+let_cont(Env,Var,EExpr1,Expr2,Expr) :-
   dif(EExpr1,error(_Reason)),
-  tr(cf([(Var,EExpr1)|MEnv],Expr2),cf(FEnv,Expr)).
+  eval(Expr2,[(Var,EExpr1)|Env],Expr).
 % the evaluation of Expr1 fails
-let_cont(Env,_Vars,EExpr1,_Expr2,cf(Env,EExpr1)) :-
+let_cont(_Env,_Var,EExpr1,_Expr2,EExpr1) :-
   EExpr1 = error(_Reason).
 
 %% (Case) ----------------------------------------------------------------------
-tr(cf(IEnv,case(IExp,Clauses)),cf(FEnv,Exp)) :-
-  tr(cf(IEnv,tuple(IExp)),cf(MEnv,tuple(MExps))),
-  match(MEnv,MExps,Clauses,NEnv,NExp),
-  tr(cf(NEnv,NExp),cf(FEnv,Exp)).
+eval(case(IExp,Clauses),Env,Exp) :-
+  eval(tuple(IExp),Env,tuple(MExps)),
+  match(Env,MExps,Clauses,NEnv,NExp),
+  eval(NExp,NEnv,Exp).
 
 %% (Apply) ---------------------------------------------------------------------
-tr(cf(IEnv,apply(FName,IExps)),cf(FEnv,Exp)) :-
+eval(apply(FName,IExps),Env,Exp) :-
   % TODO: Pass module here
-  fun_lookup(lit(atom,any),FName,fun(Pars,FunBody)),
-  tr(cf(IEnv,tuple(IExps)),cf(FEnv,tuple(FExps))),
+  fundef(lit(atom,_any),FName,fun(Pars,FunBody)),
+  eval(tuple(IExps),Env,tuple(FExps)),
   zip_binds(Pars,FExps,AppBinds),
-  tr(cf(AppBinds,FunBody),cf(_Env,Exp)).
+  eval(FunBody,AppBinds,Exp).
 
 %% (Call) ----------------------------------------------------------------------
-tr(cf(IEnv,call(Atom,Fname,IExps)),cf(FEnv,FExps1)) :-
-  tr(cf(IEnv,tuple(IExps)),cf(FEnv,tuple(FExps))),
+eval(call(Atom,Fname,IExps),Env,FExps1) :-
+  eval(tuple(IExps),Env,tuple(FExps)),
   bif(Atom,Fname,FExps, FExps1).
 
 %% (Primop) --------------------------------------------------------------------
-tr(cf(IEnv,primop(lit(atom,match_fail),_)),cf(IEnv,error(match_fail))).
+eval(primop(lit(atom,match_fail),_),_Env,error(match_fail)).
 
 %% (Try) -----------------------------------------------------------------------
-tr(cf(IEnv,try(Arg,Vars,Body,EVars,Handler)),cf(FEnv,Exp)) :-
-  tr(cf(IEnv,Arg),cf(MEnv,MExp)),
+eval(try(Arg,Vars,Body,EVars,Handler),Env,Exp) :-
+  eval(Arg,Env,MExp),
   StdVarsBody = (Vars,Body),
   ErrVarsBody = (EVars,Handler),
-  try_vars_body(IEnv,MEnv,MExp,StdVarsBody,ErrVarsBody,FEnv,Exp).
+  try_vars_body(Env,MExp,StdVarsBody,ErrVarsBody,Exp).
 
 %% try_vars_body(init_env,mid_env,mid_exp,
 %%               correct_case,error_case,
 %%               final_env,final_exp)
 %% auxiliar rule that returns final_env and final_exp
 %% of a try-catch block depending on mid_env's error symbol
-try_vars_body(IEnv,_MEnv,MExp,_,(_ErrVars,ErrBody),IEnv,ErrBody) :-
-  dif(MExp,error(_Reason)).
-try_vars_body(_IEnv,MEnv,MExp,(CVars,CBody),_,FEnv,Exp) :-
-  MExp = error(_Reason),
+try_vars_body(_Env,MExp,_,(_ErrVars,ErrBody),ErrBody) :-
+  MExp = error(_Reason).
+try_vars_body(Env,MExp,(CVars,CBody),_,Exp) :-
+  dif(MExp,error(_Reason)),
   ClauseExp = [clause(CVars,lit(atom,true),CBody)],
   CaseExp = case([MExp],ClauseExp),
-  tr(cf(MEnv,CaseExp),cf(FEnv,Exp)).
+  eval(CaseExp,Env,Exp).

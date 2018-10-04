@@ -1,24 +1,21 @@
-run(hello,(main,0),[],X,Y).
-run(cases,(main,1),[lit(int,1)],X,Y).
-run(cases_primop,(main,1),[lit(int,3)],X,Y).
-run(cases_primop_tuple,(main,1),[tuple([lit(int,2),lit(int,3)])],X,Y).
-run(factorial,(fact,1),[lit(int,3)],X,Y).
-run(odd,(odd,1),[lit(int,2)],X,Y).
-run(sum,(main,2),[lit(int,2),lit(int,1)],X,Y).
-run(sum_tuple,(main,2),[lit(int,1),lit(int,2)],X,Y).
-run(sum_list,(main,1),[cons(lit(int,1),cons(lit(int,2),lit(list,nil)))],X,Y).
-run(sign,(main,1),[lit(int,2)],X,Y).
-run(weird_fun,(weird,1),[lit(int,1)],X,Y).
+run_prog(hello,(main,0),[],X).
+run_prog(cases,(main,1),[lit(int,1)],X).
+run_prog(cases_primop,(main,1),[lit(int,3)],X).
+run_prog(cases_primop_tuple,(main,1),[tuple([lit(int,2),lit(int,3)])],X).
+run_prog(factorial,(fact,1),[lit(int,3)],X).
+run_prog(odd,(odd,1),[lit(int,2)],X).
+run_prog(sum,(main,2),[lit(int,2),lit(int,1)],X).
+run_prog(sum_tuple,(main,2),[lit(int,1),lit(int,2)],X).
+run_prog(sum_list,(main,1),[cons(lit(int,1),cons(lit(int,2),lit(list,nil)))],X).
+run_prog(sign,(main,1),[lit(int,2)],X).
+run_prog(weird_fun,(weird,1),[lit(int,1)],X).
 
 % symbolic
-run(cases,(main,1),[lit(T,Z)],X,Y).
-run(cases,(main,1),[Z],X,Y).
-run(cases_primop,(main,1),[lit(T,Z)],X,Y).
-run(odd,(odd,1),[lit(int,L)],X,Y).
-run(sign,(main,1),[lit(int,L)],X,Y).
-run(weird_fun,(weird,1),[Z],X,Y).
-run(cases_primop_tuple,(main,1),[tuple([lit(int,A),lit(int,B)])],X,Y).
-run(cases_primop_tuple,(main,1),[Z],X,Y).
-
-% bounded symbolic
-B=100, bounded_int_list(L,B), bounded_run(sum_list,(main,1),B,L,_X,R), R = error(Err).
+run_prog(cases,(main,1),[lit(T,Z)],X).
+run_prog(cases,(main,1),[Z],X).
+run_prog(cases_primop,(main,1),[lit(T,Z)],X).
+run_prog(odd,(odd,1),[lit(int,L)],X).
+run_prog(sign,(main,1),[lit(int,L)],X).
+run_prog(weird_fun,(weird,1),[Z],X).
+run_prog(cases_primop_tuple,(main,1),[tuple([lit(int,A),lit(int,B)])],X).
+run_prog(cases_primop_tuple,(main,1),[Z],X).
