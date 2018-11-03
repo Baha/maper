@@ -86,7 +86,7 @@ neq(Lit1,Lit2,false) :- eq(Lit1,Lit2,true).
 % =\=
 neeq(lit(T1,_),lit(T2,_),true) :- dif(T1,T2).
 neeq(lit(T1,X),lit(T2,Y),true) :- compare(=,T1,T2), dif(X,Y).
-neeq(Lit1,Lit2,false) :- qeq(Lit1,Lit2,true).
+neeq(Lit1,Lit2,false) :- eeq(Lit1,Lit2,true).
 
 % Arithmetic Expressions -------------------------------------------------------
 % http://erlang.org/doc/reference_manual/expressions.html#arithmetic-expressions
@@ -118,7 +118,7 @@ in1_in2_abif_wrong_types(_,T2) :-
   dif(T2,int), dif(T2,float).
 
 %% unary arithmetic operations (+,-)
-bif(ErrF,lit(atom,erlang),lit(atom,Op),top,[Lit], ErrF,Res) :-
+bif(lit(atom,erlang),lit(atom,Op),top,[Lit], ErrF,Res) :-
   memberchk(Op,['+','-']),
   unary_arith_bif_res(Op,Lit, ErrF,Res).
 
