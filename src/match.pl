@@ -1,3 +1,7 @@
+:- module(match, [match/5]).
+
+:- use_module(library(clpfd)).
+
 %% match(+IEnv,+Exps,+Cls, -OEnv,-OExp)
 %% matches a list of expressions Exps against a list of clauses Cls and returns
 %% the matching environment OEnv (IEnv with the new bindings from the variables
@@ -47,54 +51,88 @@ match_expApat(IEnv,lit(Type,Val),lit(Type,Val), IEnv).
 % variable (assumption: all variables in pattern matching are fresh)
 match_expApat(IEnv,Val,var(Var), [(Var,Val)|IEnv]).
 % list
-match_expApat(IEnv,cons(ExpHead,ExpTail),cons(PatHead,PatTail), OEnv) :-
-  match_expApat(IEnv,ExpHead,PatHead, IEnv1),
-  match_expApat(IEnv1,ExpTail,PatTail, OEnv).
+match_expApat(IEnv,list(Exps),list(Pats), OEnv) :-
+  match_expApat_list(IEnv,Exps,Pats, OEnv).
 % tuple
-match_expApat(IEnv,tuple([]),tuple([]), IEnv).
-match_expApat(IEnv,tuple([ExpElem|ExpElems]),tuple([PatElem|PatElems]), OEnv) :-
-  match_expApat(IEnv,ExpElem,PatElem, IEnv1),
-  match_expApat(IEnv1,tuple(ExpElems),tuple(PatElems), OEnv).
+match_expApat(IEnv,tuple(Exps),tuple(Pats), OEnv) :-
+  match_expApat_list(IEnv,Exps,Pats, OEnv).
+% match_expApat utility predicate
+match_expApat_list(IEnv,[],[], IEnv).
+match_expApat_list(IEnv,[Exp|Exps],[Pat|Pats], OEnv) :-
+  match_expApat(IEnv,Exp,Pat, IEnv1),
+  match_expApat_list(IEnv1,Exps,Pats, OEnv).
 
 %% mismatch(+Exp,+Pat)
 %% the expression Exp and the pattern Pat does not match
 % literal
-mismatch(Exp,lit(Type,Val)) :-
-  dif(Exp,lit(Type,Val)).
-% list
-mismatch(Exp,cons(_PatHead,_PatTail)) :-
-  when(nonvar(Exp), Exp \= cons(_,_) ). % Exp is not a list
-mismatch(Exp,cons(PatHead,_PatTail)) :-
-  when(nonvar(Exp), (
-    Exp = cons(ExpHead,_ExpTail), % Exp is a list and
-    % the Head of Exp does not match with the Head of the pattern
-    mismatch(ExpHead,PatHead) )
-  ).
-mismatch(Exp,cons(PatHead,PatTail)) :-
-  when(nonvar(Exp), (
-    Exp = cons(ExpHead,ExpTail), % Exp is a list and
-    % the Head of Exp matches with the Head of the pattern and
-    match_pat([],ExpHead,PatHead, _MEnv),
-    % the Tail of Exp does not match with the Tail of the pattern
-    mismatch(ExpTail,PatTail) )
-  ).
+mismatch(Exp,lit(_Type,_Val)) :-
+  when(nonvar(Exp),
+    Exp \= lit(_,_)
+).
+mismatch(Exp,lit(Type1,Val)) :-
+  bif(lit(atom,erlang),lit(atom,'/='),[Exp,lit(Type1,Val)], lit(atom,true)).
 % tuple
 mismatch(Exp,tuple(_PatElems)) :-
-  when(nonvar(Exp), Exp \= tuple(_) ). % Exp is not a tuple
-mismatch(Exp,tuple([PatElem|_PatElems])) :-
+  when(nonvar(Exp),
+    Exp \= tuple(_ExpElems)
+).
+mismatch(Exp,tuple(PatElems)) :-
   when(nonvar(Exp), (
-    Exp = tuple([ExpElem|_ExpElems]), % Exp is a tuple and
-    % the 1st element of Exp does not match with the 1st element of the pattern
-    mismatch(ExpElem,PatElem) )
-  ).
-mismatch(Exp,tuple([PatElem|PatElems])) :-
+    Exp = tuple(ExpElems),
+    mismatch_elems(ExpElems,PatElems) )
+).
+% list
+mismatch(Exp,list(_PatElems)) :-
+  when(nonvar(Exp),
+    Exp \= list(_ExpElems)
+).
+mismatch(Exp,list(PatElems)) :-
   when(nonvar(Exp), (
-    Exp = tuple([ExpElem|ExpElems]), % Exp is a tuple and
-    % the 1st element of Exp matches with the 1st element of the pattern and
-    match_pat([],ExpElem,PatElem, _MEnv),
-    % one of the other elements of Exp does not match the pattern
-    mismatch(tuple(ExpElems),tuple(PatElems)) )
-  ).
+    Exp = list(ExpElems),
+    mismatch_elems(ExpElems,PatElems) )
+).
+
+%% mismatch_elems(?ExpElems,+PatElems)
+% ExpElems and PatElems do not match if their lists of elements do not match
+mismatch_elems(ExpElems,[]) :-
+  dif(ExpElems,[]).
+mismatch_elems(ExpElems,[Pat|Pats]) :-
+  exists_nonvar_pat([Pat|Pats]),
+  when(nonvar(ExpElems), (
+    mismatch_elems_lists(ExpElems,[Pat|Pats])
+  )
+).
+
+%% mismatch_elems_lists(?ExpElems,+PatElems)
+% ExpElems and PatElems have a different length
+mismatch_elems_lists(ExpElems,PatElems) :-
+  length(PatElems,N), has_not_length(ExpElems,N).
+%  diff_length(ExpElems,PatElems).
+% there exists an expression in ExpElems that does not match with
+% the corresponding element (same position in the list) in PatElems
+mismatch_elems_lists(ExpElems,PatElems) :-
+  length(PatElems,N), length(ExpElems,N),
+  exist_mismatch(ExpElems,PatElems).
+
+%% exist_mismatch_plist(?ExpElems,+PatElems)
+% Exp and Pat does not match
+exist_mismatch([Exp|_Exps],[Pat|_Pats]) :-
+  mismatch(Exp,Pat).
+% Exp match with Pat and
+exist_mismatch([Exp|Exps],[Pat|Pats]) :-
+  % NOTE: Pat is nonvar, hence match_expApat is semidet
+  match_expApat([],Exp,Pat, _MEnv),
+  exist_mismatch(Exps,Pats).
+
+%
+has_not_length([],N) :- N>=1.
+has_not_length(L,N) :- N>=1, M is N-1,
+  when(nonvar(L), (L = [_|T], has_not_length(T,M))).
+
+%
+exists_nonvar_pat([Pat|Pats]) :- Pat = var(_),
+  exists_nonvar_pat(Pats).
+exists_nonvar_pat([Pat|_Pats]) :- Pat \= var(_).
 
 %% match_guard(+Cond,+IEnv,+Guard,+Exps,+Body, -MExp,GRes)
 %% IF Cond = 'true', THEN evaluates the guard Guard in IEnv and returns

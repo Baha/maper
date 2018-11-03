@@ -17,19 +17,28 @@ bif(lit(atom,erlang),lit(atom,'=='), [L1,L2], lit(atom,false)) :-
 eq(lit(int,X),lit(int,Y)) :- X #= Y.
 eq(lit(int,X),lit(float,Y)) :- { X =:= Y }.
 eq(lit(float,X),lit(int,Y)) :- { X =:= Y }.
-eq(lit(int,X),lit(float,Y)) :- { X =:= Y }.
+eq(lit(float,X),lit(float,Y)) :- { X =:= Y }.
 % atom
 eq(lit(atom,X),lit(atom,Y)) :- compare(=,X,Y).
 % tuple
-eq(tuple([]),tuple([])).
-eq(tuple([X|Xs]),tuple([Y|Ys])) :-
-  bif(lit(atom,erlang),lit(atom,'=='),[X,Y], lit(atom,true)),
-  bif(lit(atom,erlang),lit(atom,'=='),[tuple(Xs),tuple(Ys)], lit(atom,true)).
+eq(tuple(X),tuple(Y)) :-
+  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(X)], lit(int,S1)),
+  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(Y)], lit(int,S2)),
+  eq_plist(X,S1,Y,S2).
 % list
-eq(lit(list,nil),lit(list,nil)).
-eq(cons(H1,T1),cons(H2,T2)) :-
-  bif(lit(atom,erlang),lit(atom,'=='),[H1,H2], lit(atom,true)),
-  bif(lit(atom,erlang),lit(atom,'=='),[T1,T2], lit(atom,true)).
+eq(list(X),list(Y)) :-
+  bif(lit(atom,erlang),lit(atom,'tuple_size'),[list(X)], lit(int,S1)),
+  bif(lit(atom,erlang),lit(atom,'tuple_size'),[list(Y)], lit(int,S2)),
+  eq_plist(X,S1,Y,S2).
+%%
+eq_plist(X,S1,Y,S2) :-
+  S1 #= S2,
+  eq_plist(X,Y).
+%%
+eq_plist([],[]).
+eq_plist([X|Xs],[Y|Ys]) :-
+  bif(lit(atom,erlang),lit(atom,'=='),[X,Y], lit(atom,true)),
+  when((nonvar(Xs),nonvar(Ys)), eq_plist(Xs,Ys)).
 /** ----------------------------------------------------------------------------
  * /=
  */
@@ -39,49 +48,37 @@ bif(lit(atom,erlang),lit(atom,'/='), [L1,L2], lit(atom,false)) :-
   bif(lit(atom,erlang),lit(atom,'=='), [L1,L2], lit(atom,true)).
 % number
 neq(lit(int,X),lit(int,Y)) :- X #\= Y.
-neq(lit(float,X),lit(float,Y)) :- { X =\= Y }.
 neq(lit(int,X),lit(float,Y)) :- { X =\= Y }.
 neq(lit(float,X),lit(int,Y)) :- { X =\= Y }.
+neq(lit(float,X),lit(float,Y)) :- { X =\= Y }.
 % atom
 neq(lit(atom,X),lit(atom,Y)) :- dif(X,Y).
 % tuple
-neq(tuple(T1),tuple(T2)) :-
-  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(T1)], lit(int,S1)),
-  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(T2)], lit(int,S2)),
-  neq_tuple(T1,S1,T2,S2).
+neq(tuple(X),tuple(Y)) :-
+  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(X)], lit(int,S1)),
+  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(Y)], lit(int,S2)),
+  neq_plist(X,S1,Y,S2).
 % list
-neq(lit(list,nil),cons(_,_)).
-neq(cons(_,_),lit(list,nil)).
-neq(cons(H1,T1),cons(H2,T2)) :-
-  bif(lit(atom,erlang),lit(atom,'length'),[cons(H1,T1)], lit(int,S1)),
-  bif(lit(atom,erlang),lit(atom,'length'),[cons(H2,T2)], lit(int,S2)),
-  neq_list(cons(H1,T1),S1,cons(H2,T2),S2).
-%
+neq(list(X),list(Y)) :-
+  bif(lit(atom,erlang),lit(atom,'length'),[list(X)], lit(int,S1)),
+  bif(lit(atom,erlang),lit(atom,'length'),[list(Y)], lit(int,S2)),
+  neq_plist(X,S1,Y,S2).
+% different types
 neq(X,Y) :- type_of(X,T1), type_of(Y,T2), dif(T1,T2).
-%
-neq_tuple(_L1,S1,_L2,S2) :-
+%%
+neq_plist(_X,S1,_Y,S2) :-
   S1 #\= S2.
-neq_tuple(L1,S1,L2,S2) :-
+neq_plist(X,S1,Y,S2) :-
   S1 #= S2,
-  neq_tuple_same_size(L1,L2).
+  neq_plist(X,Y).
 %
-neq_tuple_same_size([X|_Xs],[Y|_Ys]) :-
-  bif(lit(atom,erlang),lit(atom,'/='),[X,Y], lit(atom,true)).
-neq_tuple_same_size([X|Xs],[Y|Ys]) :-
-  bif(lit(atom,erlang),lit(atom,'=='), [X,Y], lit(atom,true)),
-  when((nonvar(Xs),nonvar(Ys)), neq_tuple_same_size(Xs,Ys)).
+neq_plist([X|Xs],[Y|Ys]) :-
+  bif(lit(atom,erlang),lit(atom,'/='),[X,Y], lit(atom,Res)),
+  neq_plist_cont(Res,Xs,Ys).
 %
-neq_list(_L1,S1,_L2,S2) :-
-  S1 #\= S2.
-neq_list(L1,S1,L2,S2) :-
-  S1 #= S2,
-  neq_list_same_length(L1,L2).
-%
-neq_list_same_length(cons(H1,_T1),cons(H2,_T2)) :-
-  bif(lit(atom,erlang),lit(atom,'/='),[H1,H2], lit(atom,true)).
-neq_list_same_length(cons(H1,T1),cons(H2,T2)) :-
-  bif(lit(atom,erlang),lit(atom,'=='),[H1,H2], lit(atom,true)),
-  when((nonvar(T1),nonvar(T2)), neq_list_same_length(T1,T2)).
+neq_plist_cont(true,_Xs,_Ys).
+neq_plist_cont(false,Xs,Ys) :-
+  when((nonvar(Xs),nonvar(Ys)), neq_plist(Xs,Ys)).
 /** ----------------------------------------------------------------------------
  * =<
  */
@@ -105,41 +102,37 @@ bif(lit(atom,erlang),lit(atom,'<'),[L1,L2], lit(atom,false)) :-
 lt(lit(int,X),lit(int,Y)) :- X #< Y.
 lt(lit(int,X),lit(float,Y)) :- { X < Y }.
 lt(lit(float,X),lit(int,Y)) :- { X < Y }.
-lt(lit(int,X),lit(float,Y)) :- { X < Y }.
+lt(lit(float,X),lit(float,Y)) :- { X < Y }.
 % atom
 lt(lit(atom,X),lit(atom,Y)) :- X @< Y.
-% tuple
+% tuple : tuples are ordered by size, two tuples with the same size are
+% compared element by element.
 lt(tuple(X),tuple(Y)) :-
   bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(X)], lit(int,S1)),
   bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(Y)], lit(int,S2)),
-  lt_tuple(X,S1,Y,S2).
-% list
-lt(lit(list,nil),cons(_,_)).
-lt(cons(H1,_),cons(H2,_)) :-
-  bif(lit(atom,erlang),lit(atom,'<'),[H1,H2], lit(atom,true)).
-lt(cons(H1,T1),cons(H2,T2)) :-
-  bif(lit(atom,erlang),lit(atom,'>='),[H1,H2], lit(atom,true)),
-  when((nonvar(T1),nonvar(T2)), lt(T1,T2)).
-%
+  lt_tuple_cont(X,S1,Y,S2).
+% list: lists are compared element by element
+lt(list(X),list(Y)) :- lt_plist(X,Y).
+% different types
 lt(X,Y) :- type_of(X,T1), type_of(Y,T2), lt_by_type(T1,T2).
-%%
-lt_tuple(_T1,S1,_T2,S2) :-
-  S1 #< S2.
-lt_tuple(T1,S1,T2,S2) :-
+% lt_tuple
+lt_tuple_cont(_X,S1,_Y,S2) :-
+  S1 #\= S2.
+lt_tuple_cont(X,S1,Y,S2) :-
   S1 #= S2,
-  lt_tuple_same_size(T1,T2).
-%
-lt_tuple_same_size([X|_Xs],[Y|_Ys]) :-
+  lt_plist(X,Y).
+%%
+lt_plist([X|_Xs],[Y|_Ys]) :-
   bif(lit(atom,erlang),lit(atom,'<'),[X,Y], lit(atom,true)).
-lt_tuple_same_size([X|Xs],[Y|Ys]) :-
+lt_plist([X|_Xs],[Y|_Ys]) :-
   bif(lit(atom,erlang),lit(atom,'=='),[X,Y], lit(atom,true)),
-  when((nonvar(Xs),nonvar(Ys)), lt_tuple_same_size(Xs,Ys)).
-%
+  when((nonvar(Xs),nonvar(Ys)), lt_plist(Xs,Ys)).
+%%
 type_of(lit(int,_),number). type_of(lit(float,_),number).
 type_of(lit(atom,_),atom).
-type_of(lit(list,nil),list). type_of(cons(_,_),list).
+type_of(list(_),list).
 type_of(tuple(_),tuple).
-%
+%%
 :- use_module(library(tabling)). % just a note (unnecessary thanks to when/2)
 :- table lt_by_type/2.
 % http://www.swi-prolog.org/pldoc/man?section=tabling-non-termination
@@ -172,32 +165,28 @@ gt(lit(float,X),lit(int,Y)) :- { X > Y }.
 gt(lit(float,X),lit(float,Y)) :- { X > Y }.
 % atom
 gt(lit(atom,X),lit(atom,Y)) :- X @> Y.
-% tuple
+% tuple: tuples are ordered by size, two tuples with the same size are
+% compared element by element.
 gt(tuple(X),tuple(Y)) :-
   bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(X)], lit(int,S1)),
   bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(Y)], lit(int,S2)),
-  gt_tuple(X,S1,Y,S2).
-% list
-gt(cons(_,_),lit(list,nil)).
-gt(cons(H1,_),cons(H2,_)) :-
-  bif(lit(atom,erlang),lit(atom,'>'),[H1,H2], lit(atom,true)).
-gt(cons(H1,T1),cons(H2,T2)) :-
-  bif(lit(atom,erlang),lit(atom,'=<'),[H1,H2], lit(atom,true)),
-  when((nonvar(T1),nonvar(T2)), gt(T1,T2)).
-%
+  gt_tuple_cont(X,S1,Y,S2).
+% list: lists are compared element by element
+gt(list(X),list(Y)) :- gt_plist(X,Y).
+% different types
 gt(X,Y) :- type_of(X,T1), type_of(Y,T2), lt_by_type(T2,T1).
-%
-gt_tuple(_T1,S1,_T2,S2) :-
+% gt_tuple
+gt_tuple_cont(_T1,S1,_T2,S2) :-
   S1 #> S2.
-gt_tuple(T1,S1,T2,S2) :-
+gt_tuple_cont(T1,S1,T2,S2) :-
   S1 #= S2,
-  gt_tuple_same_size(T1,T2).
-%
-gt_tuple_same_size([X|_Xs],[Y|_Ys]) :-
-  bif(lit(atom,erlang),lit(atom,'>'), [X,Y], lit(atom,true)).
-gt_tuple_same_size([X|Xs],[Y|Ys]) :-
-  bif(lit(atom,erlang),lit(atom,'=='), [X,Y], lit(atom,true)),
-  when((nonvar(Xs),nonvar(Ys)), gt_tuple_same_size(Xs,Ys)).
+  gt_plist(T1,T2).
+%%
+gt_plist([X|_Xs],[Y|_Ys]) :-
+  bif(lit(atom,erlang),lit(atom,'>'),[X,Y], lit(atom,true)).
+gt_plist([X|_Xs],[Y|_Ys]) :-
+  bif(lit(atom,erlang),lit(atom,'=='),[X,Y], lit(atom,true)),
+  when((nonvar(Xs),nonvar(Ys)), gt_plist(Xs,Ys)).
 /** ----------------------------------------------------------------------------
 * =:=
 */
@@ -223,16 +212,14 @@ bif(lit(atom,erlang),lit(atom,Op),[L1,L2], Res) :-
   binary_arith_bif_res(L1,Op,L2, Res).
 
 % result of binary arithmetic operations
-binary_arith_bif_res(lit(T1,X),Op,lit(T2,Y), lit(T3,Z)) :-
-  in1_in2_out_abif_types(T1,T2,T3),
+binary_arith_bif_res(lit(int,X),Op,lit(int,Y), lit(int,Z)) :-
+  OpCall =.. [Op,X,Y], Z #= OpCall.
+binary_arith_bif_res(lit(_T,X),Op,lit(float,Y), lit(float,Z)) :-
+  OpCall =.. [Op,X,Y], { Z = OpCall }.
+binary_arith_bif_res(lit(float,X),Op,lit(_,Y), lit(float,Z)) :-
   OpCall =.. [Op,X,Y], { Z = OpCall }.
 binary_arith_bif_res(lit(T1,_),__,lit(T2,_), error(badarith)) :-
   in1_in2_abif_wrong_types(T1,T2).
-
-% inputs/output types of arithmetic operations
-in1_in2_out_abif_types(float,int,float).
-in1_in2_out_abif_types(int,float,float).
-in1_in2_out_abif_types(T,T,T).
 
 % inputs/output types mismatch
 in1_in2_abif_wrong_types(T1,_) :-
@@ -246,7 +233,9 @@ bif(lit(atom,erlang),lit(atom,Op),[Lit], Res) :-
   unary_arith_bif_res(Op,Lit, Res).
 
 % result of unary arithmetic operations
-unary_arith_bif_res(Op,lit(T,X), lit(T,Z)) :-
+unary_arith_bif_res(Op,lit(int,X), lit(int,Z)) :-
+  OpCall =.. [Op,X], Z #= OpCall.
+unary_arith_bif_res(Op,lit(float,X), lit(float,Z)) :-
   OpCall =.. [Op,X], { Z = OpCall }.
 unary_arith_bif_res(__,lit(T,_), error(badarith)) :-
   dif(T,int), dif(T,float).
@@ -358,15 +347,9 @@ bif(lit(atom,erlang),lit(atom,'apply'),[_Mod,FName,Args], Exp) :-
  *    "Erlang"
  */
 bif(lit(atom,erlang),lit(atom,'atom_to_list'),[lit(atom,A)], L) :-
-  when(nonvar(A), atom_to_list(A,L)).
+  when(nonvar(A), atom_codes(A,L)).
 bif(lit(atom,erlang),lit(atom,'atom_to_list'),[Arg], error(badarg)) :-
   when(nonvar(Arg), Arg \= lit(atom,_)).
-
-atom_to_list(Atom,List) :-
-  atom_codes(Atom,PlList), pl2erl(PlList,List).
-
-pl2erl([],lit(list,nil)).
-pl2erl([H|T1],cons(H,T2)) :- pl2erl(T1,T2).
 
 /** ----------------------------------------------------------------------------
  *  ceil(Number) -> integer()
@@ -605,9 +588,9 @@ bif(lit(atom,erlang),lit(atom,'floor'),[Arg], error(badarg)) :-
  *
  *  Failure: badarg if List is the empty list [].
  */
-bif(lit(atom,erlang),lit(atom,'hd'),[cons(H,_)], H).
+bif(lit(atom,erlang),lit(atom,'hd'),[list([H|_])], H).
 bif(lit(atom,erlang),lit(atom,'hd'),[Arg], error(badarg)) :-
-  when(nonvar(Arg), Arg \= cons(_,_) ).
+  when(nonvar(Arg), Arg \= list(_) ).
 
 /** ----------------------------------------------------------------------------
  *  erlang:insert_element(Index, Tuple1, Term) -> Tuple2
@@ -752,10 +735,9 @@ bif(lit(atom,erlang),lit(atom,'is_integer'),[Term], lit(atom,false)) :-
  *
  *    Allowed in guard tests.
  */
-bif(lit(atom,erlang),lit(atom,'is_list'),[lit(list,nil)], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'is_list'),[cons(_Hd,_Tl)], lit(atom,true)).
+bif(lit(atom,erlang),lit(atom,'is_list'),[list(_)], lit(atom,true)).
 bif(lit(atom,erlang),lit(atom,'is_list'),[Term], lit(atom,false)) :-
-  when(nonvar(Term), ( Term \= lit(list,nil), Term \= cons(_Hd,_Tl) ) ).
+  when(nonvar(Term), ( Term \= list(_) ) ).
 
 /** ----------------------------------------------------------------------------
  *  is_number(Term) -> boolean()
@@ -798,17 +780,17 @@ bif(lit(atom,erlang),lit(atom,'is_tuple'),[Arg], lit(atom,false)) :-
  *    > length([1,2,3,4,5,6,7,8,9]).
  *    9
 */
-bif(lit(atom,erlang),lit(atom,'length'),[lit(list,nil)], lit(int,N)) :-
-  N #= 0.
-bif(lit(atom,erlang),lit(atom,'length'),[cons(H,T)], lit(int,N)) :-
-  N #>= 1,
-  when(nonvar(T), len(cons(H,T),N)).
+bif(lit(atom,erlang),lit(atom,'length'),[list(L)], lit(int,N)) :-
+  N #>= 0,
+  when(nonvar(L), len(L,N)).
 bif(lit(atom,erlang),lit(atom,'length'),[Arg], error(badarg)) :-
-  when(nonvar(Arg), ( Arg \= lit(list,nil), Arg \= cons(_,_) ) ).
+  when(nonvar(Arg), Arg \= list(_) ).
 
-len(cons(H,T),N) :-
-  pl2erl(L,cons(H,T)),
-  length(L,N).
+len([],N) :-
+  N #= 0.
+len([_|T],M) :-
+  M #= N+1, M #>= 1,
+  when(nonvar(T), len(T,N) ).
 
 /** ----------------------------------------------------------------------------
  *  max(Term1, Term2) -> Maximum
@@ -994,9 +976,9 @@ bif(lit(atom,erlang),lit(atom,'size'),[Arg], error(badarg)) :-
  *
  *    Failure: badarg if List is the empty list [].
 */
-bif(lit(atom,erlang),lit(atom,'tl'),[cons(_H,T)], T).
+bif(lit(atom,erlang),lit(atom,'tl'),[list([_H|T])], T).
 bif(lit(atom,erlang),lit(atom,'tl'),[Arg], error(badarg)) :-
-  when(nonvar(Arg), Arg \= cons(_,_) ).
+  when(nonvar(Arg), Arg \= list(_) ).
 
 /** ----------------------------------------------------------------------------
  *  trunc(Number) -> integer()
@@ -1035,7 +1017,7 @@ bif(lit(atom,erlang),lit(atom,'trunc'),[Arg], error(badarg)) :-
  *    Allowed in guard tests.
 */
 bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(T)], lit(int,S)) :-
-  S #>= 1,
+  S #>= 0,
   when(nonvar(T), length(T,S) ).
 bif(lit(atom,erlang),lit(atom,'tuple_size'),[Arg], error(badarg)) :-
   when(nonvar(Arg), Arg \= tuple(_) ).

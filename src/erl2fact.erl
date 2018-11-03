@@ -1,7 +1,7 @@
 -module(erl2fact).
 -export([main/1]).
 
--include("include/maper_macros.hrl").
+-include("../include/maper_macros.hrl").
 
 main(File) ->
   case compile:file(File, [to_core, binary]) of
@@ -29,16 +29,6 @@ cerl2fact_fundef({ModName, FunName, FunBody}) ->
   FactFunBody    = cerl2fact(FunBody),
   ?FUNDEF_PRED(FactModuleName, FactFunName, FactFunBody).
 
-cerl2fact_lit([]) -> ?NIL_PRED;
-
-cerl2fact_lit(Node) when is_integer(Node) ->
-  FactInt = integer_to_list(Node),
-  ?INT_PRED(FactInt);
-
-cerl2fact_lit(Node) when is_atom(Node) ->
-  FactAtom = atom_to_list(Node),
-  ?ATOM_PRED(FactAtom).
-
 cerl2fact(Node) when is_list(Node) ->
   FactList = [cerl2fact(CoreElem) || CoreElem <- Node],
   ?LIST_START ++ string:join(FactList, ?LIST_SEP) ++ ?LIST_END;
@@ -54,16 +44,34 @@ cerl2fact(Node) ->
     literal ->
       CoreConcrete = cerl:concrete(Node),
       case CoreConcrete of
+        Float when is_float(Float) ->
+          FloatStr = float_to_list(Float,[{decimals,15},compact]),
+          ?LIT_PRED(?FLOAT_PRED(FloatStr));
+        Int when is_integer(Int) ->
+          IntStr = integer_to_list(Int),
+          ?LIT_PRED(?INT_PRED(IntStr));
+        Atom when is_atom(Atom) ->
+          AtomStr = atom_to_list(Atom),
+          ?LIT_PRED(?ATOM_PRED(AtomStr));
         Tuple when is_tuple(Tuple) ->
-          cerl2fact(lit2core(Tuple));
-        [] ->
-          FactConcrete = cerl2fact_lit(CoreConcrete),
-          ?LIT_PRED(FactConcrete);
+          TupleSize = tuple_size(Tuple),
+          NewTuple = case TupleSize of
+            0 -> ?LIST_START ++ ?LIST_END;
+            N -> cerl2fact([element(I,Tuple) || I <- lists:seq(1,N)])
+          end,
+          ?TUPLE_PRED(NewTuple);
         List when is_list(List) ->
-          cerl2fact(lit2core(List));
-        _ ->
-          FactConcrete = cerl2fact_lit(CoreConcrete),
-          ?LIT_PRED(FactConcrete)
+          ListLength = length(List),
+          NewList = case ListLength of
+            0 -> ?LIST_START ++ ?LIST_END;
+            _ -> cerl2fact(List)
+          end,
+          ?LIST_PRED(NewList);
+        Unsupported ->
+          UStr = io_lib:format("~p",[Unsupported]),
+          io:fwrite(standard_error,"~s~s~n",
+            ["erl2fact: unsupported literal: ", UStr]),
+          exit(unsupported_literal)
       end;
     var ->
       CoreVarName = cerl:var_name(Node),
@@ -77,11 +85,15 @@ cerl2fact(Node) ->
           ?VAR_PRED(FactVarName)
         end;
     cons ->
-      CoreConsHead = cerl:cons_hd(Node),
-      CoreConsTail = cerl:cons_tl(Node),
-      FactConsHead = cerl2fact(CoreConsHead),
-      FactConsTail = cerl2fact(CoreConsTail),
-      ?CONS_PRED(FactConsHead, FactConsTail);
+      case cerl:is_c_list(Node) of
+        true ->
+          ProperList = cerl2fact(cerl:list_elements(Node)),
+          ?LIST_PRED(ProperList);
+        false ->
+          Head = cerl2fact(cerl:cons_hd(Node)),
+          Tail = cerl2fact(cerl:cons_tl(Node)),
+          ?CONS_PRED(Head, Tail)
+      end;
     tuple ->
       CoreTupleEs = cerl:tuple_es(Node),
       FactTupleEs = cerl2fact(CoreTupleEs),
@@ -150,6 +162,10 @@ cerl2fact(Node) ->
       FactTryEVars   = cerl2fact(CoreTryEVars),
       FactTryHandler = cerl2fact(CoreTryHandler),
       ?TRY_PRED(FactTryArg, FactTryVars, FactTryBody, FactTryEVars, FactTryHandler);
+    seq ->
+      Arg = cerl2fact(cerl:seq_arg(Node)),
+      Seq = cerl2fact(cerl:seq_body(Node)),
+      ?SEQ_PRED(Arg,Seq);
     %% Catch-all case for literal values
     _ ->
       cerl2fact(lit2core(Node))

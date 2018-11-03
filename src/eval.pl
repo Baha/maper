@@ -1,5 +1,6 @@
-:- include('match').
+:- use_module('match').
 :- include('utils').
+:- include('modules/erlang').
 
 :- use_module(library(lists)).
 :- use_module(library(terms)).
@@ -10,7 +11,8 @@
 %% loads mod and evaluates fun (from mod)
 run_prog(Mod,(Fun,Arity),Args,FExp) :-
   retractall(fundef(_,_,_)),
-  consult(Mod),
+  atom_concat('../tests/',Mod,File),
+  consult(File),
   run(Mod,Fun/Arity,Args,FExp).
 
 %% eval(mod,fun,args,final_env,final_exp)
@@ -30,15 +32,29 @@ eval(lit(Type,Val),_Env,lit(Type,Val)).
 %% (Var)
 eval(var(Var),Env,Val) :-
   memberchk((Var,Val),Env).
-%% (Cons)
-eval(cons(IExp1,IExp2),Env,cons(FExp1,FExp2)) :-
-  eval(IExp1,Env,FExp1),
-  eval(IExp2,Env,FExp2).
+%% (List)
+eval(list(Elems),Env,list(FElems)) :-
+  eval_list(Elems,Env,FElems).
 %% (Tuple)
-eval(tuple([]),_Env,tuple([])).
-eval(tuple([IExp|IExps]),Env,tuple([FExp|FExps])) :-
-  eval(IExp,Env,FExp),
-  eval(tuple(IExps),Env,tuple(FExps)).
+eval(tuple(Elems),Env,tuple(FElems)) :-
+  eval_list(Elems,Env,FElems).
+
+% evaluate a list of expressions
+eval_list([],_Env,[]).
+eval_list([Exp|Exps],Env,[FExp|FExps]) :-
+  eval(Exp,Env,FExp),
+  eval_list(Exps,Env,FExps).
+
+%% (Seq) -----------------------------------------------------------------------
+% returns the evaluation of the last expression
+% Since any binding created by the sequence is transformed into a let-binding
+% by cerl, the evaluation of Exp does not change the environment (bindings).
+% Nevertheless, we cannot skip the evaluation of the single expressions in the
+% sequence except the last one because they might have effects on the program
+% execution, e.g., send)
+eval(seq(Exp,Exps),Env,FExp) :-
+  eval(Exp,Env,_Exp1),
+  eval(Exps,Env,FExp).
 
 %% (Let) -----------------------------------------------------------------------
 eval(let([var(Var)],Expr1,Expr2),Env,Expr) :-
@@ -61,7 +77,7 @@ eval(case(IExp,Clauses),Env,Exp) :-
 %% (Apply) ---------------------------------------------------------------------
 eval(apply(FName,IExps),Env,Exp) :-
   % TODO: Pass module here
-  fundef(lit(atom,_any),FName,fun(Pars,FunBody)),
+  fundef(lit(atom,_),FName,fun(Pars,FunBody)),
   eval(tuple(IExps),Env,tuple(FExps)),
   zip_binds(Pars,FExps,AppBinds),
   eval(FunBody,AppBinds,Exp).

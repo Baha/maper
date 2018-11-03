@@ -4,10 +4,12 @@
 -define(LIST_SEP,   ",").
 -define(LIST_START, "[").
 -define(LIST_END,   "]").
+-define(CONS_SEP,   "|").
 -define(SQUOTE_START, "'").
 -define(SQUOTE_END, "'").
 
 -define(INT_ATOM,    "int").
+-define(FLOAT_ATOM,  "float").
 -define(ATOM_ATOM,   "atom").
 -define(LIST_ATOM,   "list").
 -define(NIL_ATOM,    "nil").
@@ -17,6 +19,7 @@
 -define(VAR_ATOM,    "var").
 -define(CONS_ATOM,   "cons").
 -define(TUPLE_ATOM,  "tuple").
+-define(SEQ_ATOM,    "seq").
 -define(LET_ATOM,    "let").
 -define(CASE_ATOM,   "case").
 -define(CLAUSE_ATOM, "clause").
@@ -29,13 +32,12 @@
 -define(INT_PRED(Int),
   ?INT_ATOM ++ ?ARG_SEP ++ Int).
 
+-define(FLOAT_PRED(Int),
+  ?FLOAT_ATOM ++ ?ARG_SEP ++ Int).
+
 -define(ATOM_PRED(Atom),
   ?ATOM_ATOM ++ ?ARG_SEP ++
   ?SQUOTE_START ++ Atom ++ ?SQUOTE_END).
-
--define(NIL_PRED,
-  ?LIST_ATOM ++ ?ARG_SEP ++
-  ?NIL_ATOM).
 
 -define(MODULE_PRED(Name, Defs),
   ?MODULE_ATOM ++ ?ARG_START ++
@@ -61,13 +63,22 @@
   Int ++ ?ARG_END).
 
 -define(CONS_PRED(Hd, Tl),
-  ?CONS_ATOM ++ ?ARG_START ++
-  Hd ++ ?ARG_SEP ++
-  Tl ++ ?ARG_END).
+  ?LIST_ATOM ++
+  ?ARG_START ++ ?LIST_START ++
+  Hd ++ ?CONS_SEP ++ Tl ++
+  ?LIST_END ++  ?ARG_END ).
 
 -define(TUPLE_PRED(Es),
   ?TUPLE_ATOM ++ ?ARG_START ++
   Es ++ ?ARG_END).
+
+-define(SEQ_PRED(Ar,Bd),
+  ?SEQ_ATOM ++ ?ARG_START ++
+  Ar ++ ?LIST_SEP ++ Bd ++ ?ARG_END).
+
+-define(LIST_PRED(List),
+  ?LIST_ATOM ++ ?ARG_START ++
+  List ++ ?ARG_END).
 
 -define(LET_PRED(Vars, Arg, Body),
   ?LET_ATOM ++ ?ARG_START ++
