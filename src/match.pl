@@ -50,17 +50,20 @@ match_pats(IEnv,_MEnv,[Exp|_],[Pat|_], IEnv,false) :-
 match_expApat(IEnv,lit(Type,Val),lit(Type,Val), IEnv).
 % variable (assumption: all variables in pattern matching are fresh)
 match_expApat(IEnv,Val,var(Var), [(Var,Val)|IEnv]).
-% list
-match_expApat(IEnv,list(Exps),list(Pats), OEnv) :-
-  match_expApat_list(IEnv,Exps,Pats, OEnv).
 % tuple
-match_expApat(IEnv,tuple(Exps),tuple(Pats), OEnv) :-
-  match_expApat_list(IEnv,Exps,Pats, OEnv).
-% match_expApat utility predicate
-match_expApat_list(IEnv,[],[], IEnv).
-match_expApat_list(IEnv,[Exp|Exps],[Pat|Pats], OEnv) :-
+match_expApat(IEnv,tuple([]),tuple([]), IEnv).
+match_expApat(IEnv,tuple([Exp|Exps]),tuple([Pat|Pats]), OEnv) :-
   match_expApat(IEnv,Exp,Pat, IEnv1),
-  match_expApat_list(IEnv1,Exps,Pats, OEnv).
+  match_expApat(IEnv1,tuple(Exps),tuple(Pats), OEnv).
+% list
+% basis step for proper lists
+match_expApat(IEnv,list([]),list([]), IEnv).
+% basis step for lists whose tail is a variable
+match_expApat(IEnv,list(Exps),list(var(V)), OEnv) :-
+  match_expApat(IEnv,list(Exps),var(V), OEnv).
+match_expApat(IEnv,list([Exp|Exps]),list([Pat|Pats]), OEnv) :-
+  match_expApat(IEnv,Exp,Pat, IEnv1),
+  match_expApat(IEnv1,list(Exps),list(Pats), OEnv).
 
 %% mismatch(+Exp,+Pat)
 %% the expression Exp and the pattern Pat does not match
@@ -97,7 +100,6 @@ mismatch(Exp,list(PatElems)) :-
 mismatch_elems(ExpElems,[]) :-
   dif(ExpElems,[]).
 mismatch_elems(ExpElems,[Pat|Pats]) :-
-  exists_nonvar_pat([Pat|Pats]),
   when(nonvar(ExpElems), (
     mismatch_elems_lists(ExpElems,[Pat|Pats])
   )
@@ -106,12 +108,12 @@ mismatch_elems(ExpElems,[Pat|Pats]) :-
 %% mismatch_elems_lists(?ExpElems,+PatElems)
 % ExpElems and PatElems have a different length
 mismatch_elems_lists(ExpElems,PatElems) :-
-  length(PatElems,N), has_not_length(ExpElems,N).
+  diff_len(ExpElems,PatElems).
 %  diff_length(ExpElems,PatElems).
 % there exists an expression in ExpElems that does not match with
 % the corresponding element (same position in the list) in PatElems
 mismatch_elems_lists(ExpElems,PatElems) :-
-  length(PatElems,N), length(ExpElems,N),
+  same_len(ExpElems,PatElems), exists_nonvar_pat(PatElems),
   exist_mismatch(ExpElems,PatElems).
 
 %% exist_mismatch_plist(?ExpElems,+PatElems)
@@ -123,11 +125,6 @@ exist_mismatch([Exp|Exps],[Pat|Pats]) :-
   % NOTE: Pat is nonvar, hence match_expApat is semidet
   match_expApat([],Exp,Pat, _MEnv),
   exist_mismatch(Exps,Pats).
-
-%
-has_not_length([],N) :- N>=1.
-has_not_length(L,N) :- N>=1, M is N-1,
-  when(nonvar(L), (L = [_|T], has_not_length(T,M))).
 
 %
 exists_nonvar_pat([Pat|Pats]) :- Pat = var(_),

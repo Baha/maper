@@ -1,11 +1,16 @@
 :- use_module('match').
 :- include('utils').
-:- include('modules/erlang').
 
 :- use_module(library(lists)).
 :- use_module(library(terms)).
 
+:- multifile user:file_search_path/2.
+user:file_search_path(erlang_module,modules).
+
 :- discontiguous eval/3.
+
+:- dynamic user:fundef/3.
+:- multifile user:fundef/3.
 
 %% run(mod,fun,args,final_env,final_exp)
 %% loads mod and evaluates fun (from mod)
@@ -69,8 +74,8 @@ let_cont(_Env,_Var,EExpr1,_Expr2,EExpr1) :-
   EExpr1 = error(_Reason).
 
 %% (Case) ----------------------------------------------------------------------
-eval(case(IExp,Clauses),Env,Exp) :-
-  eval(tuple(IExp),Env,tuple(MExps)),
+eval(case(IExps,Clauses),Env,Exp) :-
+  eval_list(IExps,Env,MExps),
   match(Env,MExps,Clauses,NEnv,NExp),
   eval(NExp,NEnv,Exp).
 
@@ -78,14 +83,34 @@ eval(case(IExp,Clauses),Env,Exp) :-
 eval(apply(FName,IExps),Env,Exp) :-
   % TODO: Pass module here
   fundef(lit(atom,_),FName,fun(Pars,FunBody)),
-  eval(tuple(IExps),Env,tuple(FExps)),
+  eval_list(IExps,Env,FExps),
   zip_binds(Pars,FExps,AppBinds),
   eval(FunBody,AppBinds,Exp).
 
 %% (Call) ----------------------------------------------------------------------
-eval(call(Atom,Fname,IExps),Env,FExps1) :-
-  eval(tuple(IExps),Env,tuple(FExps)),
-  bif(Atom,Fname,FExps, FExps1).
+eval(call(lit(atom,Module),lit(atom,Name),IExps),Env,Exp) :-
+  Module == erlang,
+  use_module(erlang_module(Module)),
+  call_cont(Name,IExps,Env,Exp).
+%
+eval(call(lit(atom,Module),lit(atom,Name),IExps),Env,Exp) :-
+  Module \== erlang,
+  ensure_loaded(erlang_module(Module)),
+  eval(apply(var(Name,_),IExps),Env, Exp).
+%
+call_cont(Name,IExps,Env,Exp) :-
+  erlang:bif_pred(Name/Arity),
+  length(IExps,Arity),
+  eval_list(IExps,Env,FExps),
+  erlang:bif(Name,FExps,Exp).
+call_cont(Name,IExps,_Env,error(undef)) :-
+  erlang:bif_pred(Name/Arity),
+  has_not_length(IExps,Arity).
+call_cont(Name,_IExps,_Env,error(undef)) :-
+  \+ exists_bif(Name).
+%
+exists_bif(Name) :-
+  erlang:bif_pred(Name/_Arity).
 
 %% (Primop) --------------------------------------------------------------------
 eval(primop(lit(atom,match_fail),_),_Env,error(match_fail)).

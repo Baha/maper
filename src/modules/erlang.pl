@@ -1,18 +1,76 @@
+% http://erlang.org/doc/man/erlang.html
+:- module(erlang, []).
+
 :- use_module(library(clpfd)).
 :- use_module(library(clpr)).
 
-:- discontiguous bif/4.
+bif_pred(Pred) :-
+  memberchk(Pred,[
+    '=='/2,                  % [term(),term()] -> boolean()
+    '/='/2,                  % [term(),term()] -> boolean()
+    '<'/2,                   % [term(),term()] -> boolean()
+    '=<'/2,                  % [term(),term()] -> boolean()
+    '>'/2,                   % [term(),term()] -> boolean()
+    '>='/2,                  % [term(),term()] -> boolean()
+    '=:='/2,                 % [term(),term()] -> boolean()
+    '=/='/2,                 % [term(),term()] -> boolean()
+    'and'/2,                 % [boolean(),boolean()] -> boolean()
+    'or'/2,                  % [boolean(),boolean()] -> boolean()
+    'xor'/2,                 % [boolean(),boolean()] -> boolean()
+    'not'/1,                 % [boolean(),boolean()] -> boolean()
+    '+'/2,                   % [number(),number()] -> integer()
+    '-'/2,                   % [number(),number()] -> integer()
+    '*'/2,                   % [number(),number()] -> integer()
+    '/'/2,                   % [number(),number()] -> integer()
+    'div'/2,                 % [integer(),integer()] -> integer()
+    'rem'/2,                 % [integer(),integer()] -> integer()
+    '+'/1,                   % [number()] -> number()
+    '-'/1,                   % [number()] -> number()
+    'abs'/1,                 % [number()] -> number()
+    'append_element'/2,      % [tuple(),term()] -> tuple()
+    'apply'/2,               % [tuple(),[term()]] -> tuple()
+    'apply'/3,               % [module(),atom(),[term()]] -> tuple()
+    'atom_to_list'/1,        % [atom()] -> list()
+    'ceil'/1,                % [number()] -> integer()
+    'delete_element'/2,      % [integer(),tuple()] -> tuple()
+    'element'/2,             % [integer(),tuple()] -> term()
+    'error'/1,               % [term()] -> no_return()
+    'error'/2,               % [term(),[term()]] -> no_return()
+    'float'/1,               % [number()] -> float()
+    'floor'/1,               % [number()] -> integer()
+    'hd'/1,                  % [list()] -> term()
+    'insert_element'/3,      % [integer(),tuple(),term()] -> tuple()
+    'integer_to_list'/1,     % [integer()] -> string()
+    'is_atom'/1,             % [term()] -> boolean()
+    'is_float'/1,            % [term()] -> boolean()
+    'is_integer'/1,          % [term()] -> boolean()
+    'is_list'/1,             % [term()] -> boolean()
+    'is_number'/1,           % [term()] -> boolean()
+    'is_tuple'/1,            % [term()] -> boolean()
+    'length'/1,              % [list()] -> integer()
+    'max'/2,                 % [term(),term()] -> term()
+    'min'/2,                 % [term(),term()] -> term()
+    'nif_error'/1,           % [term()] -> no_return()
+    'nif_error'/2,           % [term(),[term()]] -> no_return()
+    'round'/1,               % [number()] -> integer()
+    'size'/1,                % [tuple() | binary()] -> integer()
+    'tl'/1,                  % [list()] -> term()
+    'trunc'/1,               % [number()] -> integer()
+    'tuple_size'/1           % [tuple()] -> integer()
+  ]).
 
-% Term Comparisons -------------------------------------------------------------
+:- discontiguous bif/3.
+
+% 8.11 Term Comparisons --------------------------------------------------------
 % http://erlang.org/doc/reference_manual/expressions.html#term-comparisons
 % number < atom < reference < fun < port < pid < tuple < map < nil < list < bit string
 /** ----------------------------------------------------------------------------
 * ==
 */
-bif(lit(atom,erlang),lit(atom,'=='), [L1,L2], lit(atom,true)) :-
+bif('==',[L1,L2], lit(atom,true)) :-
   when((nonvar(L1),nonvar(L2)), eq(L1,L2)).
-bif(lit(atom,erlang),lit(atom,'=='), [L1,L2], lit(atom,false)) :-
-  bif(lit(atom,erlang),lit(atom,'/='), [L1,L2], lit(atom,true)).
+bif('==',[L1,L2], lit(atom,false)) :-
+  bif('/=',[L1,L2], lit(atom,true)).
 % number
 eq(lit(int,X),lit(int,Y)) :- X #= Y.
 eq(lit(int,X),lit(float,Y)) :- { X =:= Y }.
@@ -22,13 +80,13 @@ eq(lit(float,X),lit(float,Y)) :- { X =:= Y }.
 eq(lit(atom,X),lit(atom,Y)) :- compare(=,X,Y).
 % tuple
 eq(tuple(X),tuple(Y)) :-
-  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(X)], lit(int,S1)),
-  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(Y)], lit(int,S2)),
+  bif('tuple_size',[tuple(X)], lit(int,S1)),
+  bif('tuple_size',[tuple(Y)], lit(int,S2)),
   eq_plist(X,S1,Y,S2).
 % list
 eq(list(X),list(Y)) :-
-  bif(lit(atom,erlang),lit(atom,'tuple_size'),[list(X)], lit(int,S1)),
-  bif(lit(atom,erlang),lit(atom,'tuple_size'),[list(Y)], lit(int,S2)),
+  bif('tuple_size',[list(X)], lit(int,S1)),
+  bif('tuple_size',[list(Y)], lit(int,S2)),
   eq_plist(X,S1,Y,S2).
 %%
 eq_plist(X,S1,Y,S2) :-
@@ -37,15 +95,15 @@ eq_plist(X,S1,Y,S2) :-
 %%
 eq_plist([],[]).
 eq_plist([X|Xs],[Y|Ys]) :-
-  bif(lit(atom,erlang),lit(atom,'=='),[X,Y], lit(atom,true)),
+  bif('==',[X,Y], lit(atom,true)),
   when((nonvar(Xs),nonvar(Ys)), eq_plist(Xs,Ys)).
 /** ----------------------------------------------------------------------------
  * /=
  */
-bif(lit(atom,erlang),lit(atom,'/='), [L1,L2], lit(atom,true)) :-
+bif('/=', [L1,L2], lit(atom,true)) :-
   when((nonvar(L1),nonvar(L2)), neq(L1,L2) ).
-bif(lit(atom,erlang),lit(atom,'/='), [L1,L2], lit(atom,false)) :-
-  bif(lit(atom,erlang),lit(atom,'=='), [L1,L2], lit(atom,true)).
+bif('/=', [L1,L2], lit(atom,false)) :-
+  bif('==', [L1,L2], lit(atom,true)).
 % number
 neq(lit(int,X),lit(int,Y)) :- X #\= Y.
 neq(lit(int,X),lit(float,Y)) :- { X =\= Y }.
@@ -55,13 +113,13 @@ neq(lit(float,X),lit(float,Y)) :- { X =\= Y }.
 neq(lit(atom,X),lit(atom,Y)) :- dif(X,Y).
 % tuple
 neq(tuple(X),tuple(Y)) :-
-  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(X)], lit(int,S1)),
-  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(Y)], lit(int,S2)),
+  bif('tuple_size',[tuple(X)], lit(int,S1)),
+  bif('tuple_size',[tuple(Y)], lit(int,S2)),
   neq_plist(X,S1,Y,S2).
 % list
 neq(list(X),list(Y)) :-
-  bif(lit(atom,erlang),lit(atom,'length'),[list(X)], lit(int,S1)),
-  bif(lit(atom,erlang),lit(atom,'length'),[list(Y)], lit(int,S2)),
+  bif('length',[list(X)], lit(int,S1)),
+  bif('length',[list(Y)], lit(int,S2)),
   neq_plist(X,S1,Y,S2).
 % different types
 neq(X,Y) :- type_of(X,T1), type_of(Y,T2), dif(T1,T2).
@@ -73,7 +131,7 @@ neq_plist(X,S1,Y,S2) :-
   neq_plist(X,Y).
 %
 neq_plist([X|Xs],[Y|Ys]) :-
-  bif(lit(atom,erlang),lit(atom,'/='),[X,Y], lit(atom,Res)),
+  bif('/=',[X,Y], lit(atom,Res)),
   neq_plist_cont(Res,Xs,Ys).
 %
 neq_plist_cont(true,_Xs,_Ys).
@@ -82,21 +140,21 @@ neq_plist_cont(false,Xs,Ys) :-
 /** ----------------------------------------------------------------------------
  * =<
  */
-bif(lit(atom,erlang),lit(atom,'=<'),[L1,L2], lit(atom,true)) :-
-  bif(lit(atom,erlang),lit(atom,'=='),[L1,L2], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'=<'),[L1,L2], lit(atom,true)) :-
-  bif(lit(atom,erlang),lit(atom,'<'),[L1,L2], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'=<'),[L1,L2], lit(atom,false)) :-
-  bif(lit(atom,erlang),lit(atom,'>'),[L1,L2], lit(atom,true)).
+bif('=<',[L1,L2], lit(atom,true)) :-
+  bif('==',[L1,L2], lit(atom,true)).
+bif('=<',[L1,L2], lit(atom,true)) :-
+  bif('<',[L1,L2], lit(atom,true)).
+bif('=<',[L1,L2], lit(atom,false)) :-
+  bif('>',[L1,L2], lit(atom,true)).
 /** ----------------------------------------------------------------------------
  *  <
  */
-bif(lit(atom,erlang),lit(atom,'<'),[L1,L2], lit(atom,true)) :-
+bif('<',[L1,L2], lit(atom,true)) :-
   when((nonvar(L1),nonvar(L2)), lt(L1,L2)).
-bif(lit(atom,erlang),lit(atom,'<'),[L1,L2], lit(atom,false)) :-
-  bif(lit(atom,erlang),lit(atom,'=='),[L1,L2], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'<'),[L1,L2], lit(atom,false)) :-
-  bif(lit(atom,erlang),lit(atom,'>'),[L1,L2], lit(atom,true)).
+bif('<',[L1,L2], lit(atom,false)) :-
+  bif('==',[L1,L2], lit(atom,true)).
+bif('<',[L1,L2], lit(atom,false)) :-
+  bif('>',[L1,L2], lit(atom,true)).
 %% utility predicates
 % number
 lt(lit(int,X),lit(int,Y)) :- X #< Y.
@@ -108,8 +166,8 @@ lt(lit(atom,X),lit(atom,Y)) :- X @< Y.
 % tuple : tuples are ordered by size, two tuples with the same size are
 % compared element by element.
 lt(tuple(X),tuple(Y)) :-
-  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(X)], lit(int,S1)),
-  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(Y)], lit(int,S2)),
+  bif('tuple_size',[tuple(X)], lit(int,S1)),
+  bif('tuple_size',[tuple(Y)], lit(int,S2)),
   lt_tuple_cont(X,S1,Y,S2).
 % list: lists are compared element by element
 lt(list(X),list(Y)) :- lt_plist(X,Y).
@@ -123,9 +181,9 @@ lt_tuple_cont(X,S1,Y,S2) :-
   lt_plist(X,Y).
 %%
 lt_plist([X|_Xs],[Y|_Ys]) :-
-  bif(lit(atom,erlang),lit(atom,'<'),[X,Y], lit(atom,true)).
+  bif('<',[X,Y], lit(atom,true)).
 lt_plist([X|_Xs],[Y|_Ys]) :-
-  bif(lit(atom,erlang),lit(atom,'=='),[X,Y], lit(atom,true)),
+  bif('==',[X,Y], lit(atom,true)),
   when((nonvar(Xs),nonvar(Ys)), lt_plist(Xs,Ys)).
 %%
 type_of(lit(int,_),number). type_of(lit(float,_),number).
@@ -143,21 +201,21 @@ lt_by_type(X,Z) :- lt_by_type(X,Y), lt_by_type(Y,Z).
 /** ----------------------------------------------------------------------------
  * >=
  */
-bif(lit(atom,erlang),lit(atom,'>='), [L1,L2], lit(atom,true)) :-
-  bif(lit(atom,erlang),lit(atom,'>'), [L1,L2], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'>='), [L1,L2], lit(atom,true)) :-
-  bif(lit(atom,erlang),lit(atom,'=='), [L1,L2], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'>='), [L1,L2], lit(atom,false)) :-
-  bif(lit(atom,erlang),lit(atom,'<'), [L1,L2], lit(atom,true)).
+bif('>=', [L1,L2], lit(atom,true)) :-
+  bif('>', [L1,L2], lit(atom,true)).
+bif('>=', [L1,L2], lit(atom,true)) :-
+  bif('==', [L1,L2], lit(atom,true)).
+bif('>=', [L1,L2], lit(atom,false)) :-
+  bif('<', [L1,L2], lit(atom,true)).
 /** ----------------------------------------------------------------------------
 * >
 */
-bif(lit(atom,erlang),lit(atom,'>'),[L1,L2], lit(atom,true)) :-
+bif('>',[L1,L2], lit(atom,true)) :-
   when((nonvar(L1),nonvar(L2)), gt(L1,L2)).
-bif(lit(atom,erlang),lit(atom,'>'),[L1,L2], lit(atom,false)) :-
-  bif(lit(atom,erlang),lit(atom,'=='),[L1,L2], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'>'),[L1,L2], lit(atom,false)) :-
-  bif(lit(atom,erlang),lit(atom,'<'),[L1,L2], lit(atom,true)).
+bif('>',[L1,L2], lit(atom,false)) :-
+  bif('==',[L1,L2], lit(atom,true)).
+bif('>',[L1,L2], lit(atom,false)) :-
+  bif('<',[L1,L2], lit(atom,true)).
 % number
 gt(lit(int,X),lit(int,Y)) :- X #> Y.
 gt(lit(int,X),lit(float,Y)) :- { X > Y }.
@@ -168,8 +226,8 @@ gt(lit(atom,X),lit(atom,Y)) :- X @> Y.
 % tuple: tuples are ordered by size, two tuples with the same size are
 % compared element by element.
 gt(tuple(X),tuple(Y)) :-
-  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(X)], lit(int,S1)),
-  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(Y)], lit(int,S2)),
+  bif('tuple_size',[tuple(X)], lit(int,S1)),
+  bif('tuple_size',[tuple(Y)], lit(int,S2)),
   gt_tuple_cont(X,S1,Y,S2).
 % list: lists are compared element by element
 gt(list(X),list(Y)) :- gt_plist(X,Y).
@@ -183,62 +241,241 @@ gt_tuple_cont(T1,S1,T2,S2) :-
   gt_plist(T1,T2).
 %%
 gt_plist([X|_Xs],[Y|_Ys]) :-
-  bif(lit(atom,erlang),lit(atom,'>'),[X,Y], lit(atom,true)).
+  bif('>',[X,Y], lit(atom,true)).
 gt_plist([X|_Xs],[Y|_Ys]) :-
-  bif(lit(atom,erlang),lit(atom,'=='),[X,Y], lit(atom,true)),
+  bif('==',[X,Y], lit(atom,true)),
   when((nonvar(Xs),nonvar(Ys)), gt_plist(Xs,Ys)).
 /** ----------------------------------------------------------------------------
 * =:=
 */
-bif(lit(atom,erlang),lit(atom,'=:='),[L1,L2], lit(atom,true)) :-
+bif('=:=',[L1,L2], lit(atom,true)) :-
   when((nonvar(L1),nonvar(L2)), L1 = L2 ).
-bif(lit(atom,erlang),lit(atom,'=:='),[L1,L2], lit(atom,false)) :-
-  bif(lit(atom,erlang),lit(atom,'=/='),[L1,L2], lit(atom,true)).
+bif('=:=',[L1,L2], lit(atom,false)) :-
+  bif('=/=',[L1,L2], lit(atom,true)).
 /** ----------------------------------------------------------------------------
  * =/=
  */
-bif(lit(atom,erlang),lit(atom,'=/='),[L1,L2], lit(atom,true)) :-
-  when((nonvar(L1),nonvar(L2)), (L1 = L2, fail) ).
-bif(lit(atom,erlang),lit(atom,'=/='),[L1,L2], lit(atom,false)) :-
-  bif(lit(atom,erlang),lit(atom,'=:='),[L1,L2], lit(atom,true)).
+bif('=/=',[L1,L2], lit(atom,true)) :-
+  when((nonvar(L1),nonvar(L2)), L1 \== L2 ).
+bif('=/=',[L1,L2], lit(atom,false)) :-
+  bif('=:=',[L1,L2], lit(atom,true)).
 
-% Arithmetic Expressions -------------------------------------------------------
+% 8.12 Arithmetic Expressions --------------------------------------------------
 % http://erlang.org/doc/reference_manual/expressions.html#arithmetic-expressions
 /** ----------------------------------------------------------------------------
  * binary arithmetic operations (+,-,*,/)
  */
-bif(lit(atom,erlang),lit(atom,Op),[L1,L2], Res) :-
+bif(Op,[L1,L2], L3) :-
   memberchk(Op,['+','-','*','/']),
-  binary_arith_bif_res(L1,Op,L2, Res).
-
-% result of binary arithmetic operations
+  binary_arith_bif_res(L1,Op,L2, L3).
+%
 binary_arith_bif_res(lit(int,X),Op,lit(int,Y), lit(int,Z)) :-
   OpCall =.. [Op,X,Y], Z #= OpCall.
-binary_arith_bif_res(lit(_T,X),Op,lit(float,Y), lit(float,Z)) :-
+binary_arith_bif_res(lit(int,X),Op,lit(float,Y), lit(float,Z)) :-
   OpCall =.. [Op,X,Y], { Z = OpCall }.
-binary_arith_bif_res(lit(float,X),Op,lit(_,Y), lit(float,Z)) :-
+binary_arith_bif_res(lit(float,X),Op,lit(_T2,Y), lit(float,Z)) :-
   OpCall =.. [Op,X,Y], { Z = OpCall }.
-binary_arith_bif_res(lit(T1,_),__,lit(T2,_), error(badarith)) :-
-  in1_in2_abif_wrong_types(T1,T2).
+%
+bif(Op,[Arg1,Arg2], error(badarith)) :-
+  memberchk(Op,['+','-','*','/']),
+  in1_in2_abif_wrong_types(Arg1,Arg2).
+%
+in1_in2_abif_wrong_types(Arg1,Arg2) :-
+  var(Arg1),
+  when(nonvar(Arg2), ( Arg2 \= lit(int,_), Arg2 \= lit(float,_) )).
+in1_in2_abif_wrong_types(Arg1,Arg2) :-
+  nonvar(Arg1),
+  ( Arg1 = lit(int,_) ; Arg1 = lit(float,_) ),
+  when(nonvar(Arg2), ( Arg2 \= lit(int,_), Arg2 \= lit(float,_) )).
+in1_in2_abif_wrong_types(Arg1,Arg2) :-
+  var(Arg2),
+  when(nonvar(Arg1), ( Arg1 \= lit(int,_), Arg1 \= lit(float,_) )).
+in1_in2_abif_wrong_types(Arg1,Arg2) :-
+  nonvar(Arg2),
+  ( Arg2 = lit(int,_) ; Arg2 = lit(float,_) ),
+  when(nonvar(Arg1), ( Arg1\= lit(int,_), Arg1 \= lit(float,_) )).
+in1_in2_abif_wrong_types(Arg1,Arg2) :-
+  nonvar(Arg1), ( Arg1 \= lit(int,_), Arg1 \= lit(float,_) ),
+  nonvar(Arg2), ( Arg2 \= lit(int,_), Arg2 \= lit(float,_) ).
 
-% inputs/output types mismatch
-in1_in2_abif_wrong_types(T1,_) :-
-  dif(T1,int), dif(T1,float).
-in1_in2_abif_wrong_types(_,T2) :-
-  dif(T2,int), dif(T2,float).
+/** ----------------------------------------------------------------------------
+ * div
+ */
+bif(div,[lit(int,X),lit(int,Y)], lit(int,Q)) :-
+  when((nonvar(X),nonvar(Y)), idiv(X,Y, Q,_R) ).
+%
+idiv(N,D, Q,R) :- N #>= 0, D #>= 1, N #= Q*D+R, 0 #=< R, R #< D.
+idiv(N,D, Q,R) :- N #>= 0, D #=< -1, N #= Q*D+R, 0 #=< R, R #< -D.
+% if D<0, then the remainder is |D| < R =< 0
+idiv(N,D, Q,R) :- N #=< -1, D #>= 1, N #= Q*D+R, -D #< R, R #=< 0.
+idiv(N,D, Q,R) :- N #=< -1, D #=< -1, N #= Q*D+R, D #< R, R #=< 0.
 
-%% unary arithmetic operations (+,-)
-bif(lit(atom,erlang),lit(atom,Op),[Lit], Res) :-
-  memberchk(Op,['+','-']),
-  unary_arith_bif_res(Op,Lit, Res).
+bif(div,[Arg1,Arg2], error(badarith)) :-
+  var(Arg1),
+  when(nonvar(Arg2), ( Arg2 \= lit(int,_) ; (Arg2 = lit(int,Y), Y #= 0) )).
+bif(div,[Arg1,Arg2], error(badarith)) :-
+  nonvar(Arg1), Arg1 = lit(int,_),
+  when(nonvar(Arg2), ( Arg2 \= lit(int,_) ; (Arg2 = lit(int,Y), Y #= 0) )).
+bif(div,[Arg1,Arg2], error(badarith)) :-
+  var(Arg2),
+  when(nonvar(Arg1), Arg1 \= lit(int,_)).
+bif(div,[Arg1,Arg2], error(badarith)) :-
+  nonvar(Arg2), Arg2 = lit(int,_),
+  when(nonvar(Arg1), Arg1 \= lit(int,_)).
+bif(div,[Arg1,Arg2], error(badarith)) :-
+  nonvar(Arg1), Arg1 \= lit(int,_),
+  nonvar(Arg2), Arg2 \= lit(int,_).
 
-% result of unary arithmetic operations
-unary_arith_bif_res(Op,lit(int,X), lit(int,Z)) :-
-  OpCall =.. [Op,X], Z #= OpCall.
-unary_arith_bif_res(Op,lit(float,X), lit(float,Z)) :-
-  OpCall =.. [Op,X], { Z = OpCall }.
-unary_arith_bif_res(__,lit(T,_), error(badarith)) :-
-  dif(T,int), dif(T,float).
+/** ----------------------------------------------------------------------------
+ * rem
+ */
+bif(rem,[lit(int,X),lit(int,Y)], lit(int,R)) :-
+  when((nonvar(X),nonvar(Y)), idiv(X,Y, _Q,R) ).
+%
+bif(rem,[Arg1,Arg2], error(badarith)) :-
+  bif(div,[Arg1,Arg2], error(badarith)).
+
+/** ----------------------------------------------------------------------------
+ * unary +
+ */
+bif('+',[lit(int,X)], lit(int,X)).
+bif('+',[lit(float,X)], lit(float,X)).
+%
+bif('+',[Arg], error(badarith)) :-
+  when(nonvar(Arg), ( Arg \= lit(int,_), Arg \= lit(float,_) ) ).
+
+/** ----------------------------------------------------------------------------
+ * unary -
+ */
+bif('-',[lit(int,X)], lit(int,Z)) :- Z #= -X.
+bif('-',[lit(float,X)], lit(float,Z)) :- { Z = -X }.
+%
+bif('-',[lit(int,X)], lit(int,X)).
+bif('-',[lit(float,X)], lit(float,X)).
+%
+bif('-',[Arg], error(badarith)) :-
+  bif('+',[Arg], error(badarith)).
+
+% 8.13 Boolean Expressions -----------------------------------------------------
+% http://erlang.org/doc/reference_manual/expressions.html#boolean-expressions
+/** ----------------------------------------------------------------------------
+ * not
+ */
+bif('not',[lit(atom,B)], lit(atom,NotB)) :-
+  when(nonvar(B), not(B,NotB) ).
+%
+not(true , false).
+not(false, true ).
+%
+bif('not',[Arg], error(badarg)) :-
+  when(nonvar(Arg), Arg \= lit(atom,_) ).
+/** ----------------------------------------------------------------------------
+ * and
+ */
+bif('and',[lit(atom,B1),lit(atom,B2)], B1andB2) :-
+  when((nonvar(B1),nonvar(B2)), and(B1,B2,B1andB2) ).
+%
+and(true ,true , true ).
+and(true ,false, false).
+and(false,true , false).
+and(false,false, false).
+%
+bif('and',[Arg1,Arg2], error(badarg)) :-
+  var(Arg1),
+  when(nonvar(Arg2), Arg2 \= lit(atom,_) ).
+bif('and',[Arg1,Arg2], error(badarg)) :-
+  var(Arg1), Arg1 = lit(atom,_),
+  when(nonvar(Arg2), Arg2 \= lit(atom,_) ).
+bif('and',[Arg1,Arg2], error(badarg)) :-
+  var(Arg2),
+  when(nonvar(Arg1), Arg1 \= lit(atom,_) ).
+bif('and',[Arg1,Arg2], error(badarg)) :-
+  nonvar(Arg2), Arg2 = lit(atom,_),
+  when(nonvar(Arg1), Arg1 \= lit(atom,_) ).
+bif('and',[Arg1,Arg2], error(badarg)) :-
+  nonvar(Arg1), Arg1 \= lit(atom,_),
+  nonvar(Arg2), Arg2 \= lit(atom,_).
+/** ----------------------------------------------------------------------------
+ * or
+ */
+bif('or',[lit(atom,B1), lit(atom,B2)], B1orB2) :-
+  when((nonvar(B1),nonvar(B2)), or(B1,B2,B1orB2) ).
+%
+or(true ,true , true ).
+or(true ,false, true ).
+or(false,true , true ).
+or(false,false, false).
+%
+bif('or',[Arg1,Arg2], error(badarg)) :-
+  bif('and',[Arg1,Arg2], error(badarg)).
+/** ----------------------------------------------------------------------------
+ * xor
+ */
+bif('xor',[lit(atom,B1), lit(atom,B2)], B1xorB2) :-
+  when((nonvar(B1),nonvar(B2)), xor(B1,B2,B1xorB2) ).
+%
+xor(true ,true , false).
+xor(true ,false, true ).
+xor(false,true , true ).
+xor(false,false, false).
+%
+bif('xor',[Arg1,Arg2], error(badarg)) :-
+  bif('and',[Arg1,Arg2], error(badarg)).
+
+% 8.14 Short-Circuit Expressions -----------------------------------------------
+% http://erlang.org/doc/reference_manual/expressions.html#short-circuit-expressions
+/** ----------------------------------------------------------------------------
+ * Expr1 orelse Expr2
+ * Expr1 andalso Expr2
+ * are converted into case-of statements by core erlang
+ */
+
+% 8.15 List Operations ---------------------------------------------------------
+% http://erlang.org/doc/reference_manual/expressions.html#list-operations
+/** ----------------------------------------------------------------------------
+ * Expr1 ++ Expr2
+ */
+bif('++',[list(X),list(Y)], list(Z)) :-
+  append(X,Y,Z).
+%
+bif('++',[Arg1,Arg2], error(badarg)) :-
+  var(Arg1),
+  when(nonvar(Arg2), Arg2 \= list(_) ).
+bif('++',[Arg1,Arg2], error(badarg)) :-
+  nonvar(Arg1), Arg1 = list(_),
+  when(nonvar(Arg2), Arg2 \= list(_) ).
+bif('++',[Arg1,Arg2], error(badarg)) :-
+  var(Arg2),
+  when(nonvar(Arg1), Arg1 \= list(_) ).
+bif('++',[Arg1,Arg2], error(badarg)) :-
+  nonvar(Arg2), Arg2 = list(_),
+  when(nonvar(Arg1), Arg1 \= list(_) ).
+bif('++',[Arg1,Arg2], error(badarg)) :-
+  nonvar(Arg1), Arg1 \= list(_),
+  nonvar(Arg2), Arg2 \= list(_).
+
+/** ----------------------------------------------------------------------------
+ * Expr1 -- Expr2
+ */
+bif('--',[list(X),list(Y)], list(Z)) :-
+  when((nonvar(X),nonvar(Y)), list_subtraction(X,Y,Z)).
+%
+list_subtraction(L1,[],L1).
+list_subtraction(L1,[E2|T2],S2) :-
+  list_elem_subtraction(L1,E2,S1),
+  list_subtraction(S1,T2,S2).
+%
+list_elem_subtraction([],_L,[]).
+list_elem_subtraction([E1|T1],E2,T2) :-
+  bif('==',[E1,E2],lit(atom,Res)),
+  list_elem_subtraction_cont(Res,[E1|T1],E2,T2).
+%
+list_elem_subtraction_cont(true,[_E1|T1],_E2,T1).
+list_elem_subtraction_cont(false,[E1|T1],E2,[E1|T3]) :-
+  list_elem_subtraction(T1,E2,T3).
+%
+bif('--',[Arg1,Arg2], error(badarg)) :-
+  bif('++',[Arg1,Arg2], error(badarg)).
 
 /** ----------------------------------------------------------------------------
  *  abs(Float) -> float()
@@ -257,16 +494,17 @@ unary_arith_bif_res(__,lit(T,_), error(badarith)) :-
  *
  *    Allowed in guard tests.
  */
-bif(lit(atom,erlang),lit(atom,'abs'),[lit(int,V)], lit(int,V)) :-
+bif('abs',[lit(int,V)], lit(int,V)) :-
   V #>=0.
-bif(lit(atom,erlang),lit(atom,'abs'),[lit(int,V)], lit(int,A)) :-
+bif('abs',[lit(int,V)], lit(int,A)) :-
   V #=< -1, A #= -1*V.
-bif(lit(atom,erlang),lit(atom,'abs'),[lit(float,V)], lit(float,V)) :-
+bif('abs',[lit(float,V)], lit(float,V)) :-
   { V >=0 }.
-bif(lit(atom,erlang),lit(atom,'abs'),[lit(float,V)], lit(float,A)) :-
+bif('abs',[lit(float,V)], lit(float,A)) :-
   { V < 0, A =:= -1*V }.
-bif(lit(atom,erlang),lit(atom,'abs'),[Arg], error(badarg)) :-
-  when(nonvar(Arg), ( Arg \= lit(int,_), Arg \= lit(float,_) )).
+%
+bif('abs',[Arg], error(badarg)) :-
+  when(nonvar(Arg), ( Arg \= lit(int,_), Arg \= lit(float,_) ) ).
 
 /** ----------------------------------------------------------------------------
  *  erlang:append_element(Tuple1, Term) -> Tuple2
@@ -284,9 +522,10 @@ bif(lit(atom,erlang),lit(atom,'abs'),[Arg], error(badarg)) :-
  *    > erlang:append_element({one, two}, three).
  *    {one,two,three}
  */
-bif(lit(atom,erlang),lit(atom,'append_element'),[tuple(T1),E], tuple(T2)) :-
-  append(T1,E,T2).
-bif(lit(atom,erlang),lit(atom,'append_element'),[Arg1,_Arg2], error(badarg)) :-
+bif('append_element',[tuple(T1),E], tuple(T2)) :-
+  append(T1,[E],T2).
+%
+bif('append_element',[Arg1,_Arg2], error(badarg)) :-
   when(nonvar(Arg1), Arg1 \= tuple(_) ).
 
 /** ----------------------------------------------------------------------------
@@ -299,9 +538,10 @@ bif(lit(atom,erlang),lit(atom,'append_element'),[Arg1,_Arg2], error(badarg)) :-
  *    Calls a fun, passing the elements in Args as arguments.
 
  *    If the number of elements in the arguments are known at compile
- *    time, the call is better written as Fun(Arg1, Arg2, ... ArgN).
+ *    time, the call is better written as bif(Arg1, Arg2, ... ArgN).
  */
-bif(lit(atom,erlang),lit(atom,'apply'),[FName,Args], Exp) :-
+% TODO: check thrown error
+bif('apply',[FName,Args], Exp) :-
   eval(apply(FName,Args),[],Exp).
 
 /** ----------------------------------------------------------------------------
@@ -330,7 +570,8 @@ bif(lit(atom,erlang),lit(atom,'apply'),[FName,Args], Exp) :-
  *    has redefined the default error_handler so the replacement module
  *    is undefined, an error with reason undef is generated.
  */
-bif(lit(atom,erlang),lit(atom,'apply'),[_Mod,FName,Args], Exp) :-
+% TODO: check thrown error
+bif('apply',[_Mod,FName,Args], Exp) :-
   % TODO: Pass module here
   eval(apply(FName,Args),[],Exp).
 
@@ -346,10 +587,11 @@ bif(lit(atom,erlang),lit(atom,'apply'),[_Mod,FName,Args], Exp) :-
  *    > atom_to_list('Erlang').
  *    "Erlang"
  */
-bif(lit(atom,erlang),lit(atom,'atom_to_list'),[lit(atom,A)], L) :-
+bif('atom_to_list',[lit(atom,A)], list(L)) :-
   when(nonvar(A), atom_codes(A,L)).
-bif(lit(atom,erlang),lit(atom,'atom_to_list'),[Arg], error(badarg)) :-
-  when(nonvar(Arg), Arg \= lit(atom,_)).
+%
+bif('atom_to_list',[Arg], error(badarg)) :-
+  when(nonvar(Arg), Arg \= lit(atom,_) ).
 
 /** ----------------------------------------------------------------------------
  *  ceil(Number) -> integer()
@@ -374,22 +616,23 @@ bif(lit(atom,erlang),lit(atom,'atom_to_list'),[Arg], error(badarg)) :-
  *    > ceil(-1.1).
  *    -1
  *
- *    bif(lit(atom,erlang),lit(atom,'ceil'),[lit(float,1.0)], lit(int,C)).
- *    bif(lit(atom,erlang),lit(atom,'ceil'),[lit(float,1.1)], lit(int,C)).
- *    bif(lit(atom,erlang),lit(atom,'ceil'),[lit(float,-1.0)], lit(int,C)).
- *    bif(lit(atom,erlang),lit(atom,'ceil'),[lit(float,-1.1)], lit(int,C)).
+ *    bif('ceil',[lit(float,1.0)], lit(int,C)).
+ *    bif('ceil',[lit(float,1.1)], lit(int,C)).
+ *    bif('ceil',[lit(float,-1.0)], lit(int,C)).
+ *    bif('ceil',[lit(float,-1.1)], lit(int,C)).
  *
  *  https://proofwiki.org/wiki/Ceiling_of_Negative_equals_Negative_of_Floor
  */
-bif(lit(atom,erlang),lit(atom,'ceil'),[lit(int,N)],   lit(int,N)).
-bif(lit(atom,erlang),lit(atom,'ceil'),[lit(float,N)], lit(int,C)) :-
+bif('ceil',[lit(int,N)], lit(int,N)).
+bif('ceil',[lit(float,N)], lit(int,C)) :-
   { N >= 0, C >= N }, C #>= 0,
   when(nonvar(N), C is ceil(N)).
-bif(lit(atom,erlang),lit(atom,'ceil'),[lit(float,N)], lit(int,C)) :-
+bif('ceil',[lit(float,N)], lit(int,C)) :-
   { N < 0, C >= N, M = -N }, C #=< -1, C #= -V,
-  bif(lit(atom,erlang),lit(atom,'floor'),[lit(float,M)], lit(int,V)).
-bif(lit(atom,erlang),lit(atom,'ceil'),[Arg], error(badarg)) :-
-  when(nonvar(Arg), ( Arg \= lit(int,_), Arg \= lit(float,_) )).
+  bif('floor',[lit(float,M)], lit(int,V)).
+%
+bif('ceil',[Arg], error(badarg)) :-
+  when(nonvar(Arg), ( Arg \= lit(int,_), Arg \= lit(float,_) ) ).
 
  /** ----------------------------------------------------------------------------
  *  erlang:delete_element(Index, Tuple1) -> Tuple2
@@ -405,16 +648,14 @@ bif(lit(atom,erlang),lit(atom,'ceil'),[Arg], error(badarg)) :-
  *    > erlang:delete_element(2, {one, two, three}).
  *    {one,three}
  */
-bif(lit(atom,erlang),lit(atom,'delete_element'),[lit(int,N),tuple(X)], tuple(Y)) :-
-  when(nonvar(X), ( length(X,S), N #>= 1, N #=< S, del_elem(N,X,Y) ) ).
-bif(lit(atom,erlang),lit(atom,'delete_element'),[lit(int,N),tuple(X)], error(badarg)) :-
-  N #>= 1, when(nonvar(X), ( length(X,S), N #> S ) ).
-bif(lit(atom,erlang),lit(atom,'delete_element'),[lit(int,N),_Arg2], error(badarg)) :-
+bif('delete_element',[lit(int,N),tuple(X)], tuple(Y)) :-
+  when(nonvar(X), ( len(X,S), N #>= 1, N #=< S, del_elem(N,X,Y) ) ).
+bif('delete_element',[lit(int,N),tuple(X)], error(badarg)) :-
+  N #>= 1, when(nonvar(X), ( len(X,S), N #> S ) ).
+bif('delete_element',[lit(int,N),_Arg2], error(badarg)) :-
   N #=< 0.
-bif(lit(atom,erlang),lit(atom,'delete_element'),[lit(int,N),Arg2], error(badarg)) :-
+bif('delete_element',[lit(int,N),Arg2], error(badarg)) :-
   N #>= 1, when(nonvar(Arg2), Arg2 \= tuple(_) ).
-bif(lit(atom,erlang),lit(atom,'delete_element'),[Arg1,_Arg2], error(badarg)) :-
-  when(nonvar(Arg1), Arg1 \= lit(int,_) ).
 
 del_elem(N,L1,L2) :-
   del_elem_(N,1,L1,L2).
@@ -424,6 +665,22 @@ del_elem_(N,M,[H|T1],[H|T2]) :-
   N \== M,
   L is M+1,
   del_elem_(N,L,T1,T2).
+%
+bif('delete_element',[Arg1,Arg2], error(badarg)) :-
+  var(Arg1),
+  when(nonvar(Arg2), Arg2 \= tuple(_) ).
+bif('delete_element',[Arg1,Arg2], error(badarg)) :-
+  var(Arg1), Arg1 = lit(int,_),
+  when(nonvar(Arg2), Arg2 \= tuple(_) ).
+bif('delete_element',[Arg1,Arg2], error(badarg)) :-
+  var(Arg2),
+  when(nonvar(Arg1), Arg1 \= lit(int,_) ).
+bif('delete_element',[Arg1,Arg2], error(badarg)) :-
+  nonvar(Arg2), Arg2 = tuple(_),
+  when(nonvar(Arg1), Arg1 \= lit(int,_) ).
+bif('delete_element',[Arg1,Arg2], error(badarg)) :-
+  nonvar(Arg1), Arg1 \= lit(int,_),
+  nonvar(Arg2), Arg2 \= tuple(_).
 
  /** ---------------------------------------------------------------------------
  *  element(N, Tuple) -> term()
@@ -440,16 +697,14 @@ del_elem_(N,M,[H|T1],[H|T2]) :-
  *
  *  Allowed in guard tests.
  */
-bif(lit(atom,erlang),lit(atom,'element'),[lit(int,N),tuple(X)], Y) :-
-  when(nonvar(X), ( length(X,S), N #>= 1, N #=< S, elem(N,X,Y) ) ).
-bif(lit(atom,erlang),lit(atom,'element'),[lit(int,N),tuple(X)], error(badarg)) :-
-  N #>= 1, when(nonvar(X), ( length(X,S), N #> S ) ).
-bif(lit(atom,erlang),lit(atom,'element'),[lit(int,N),_Arg2], error(badarg)) :-
+bif('element',[lit(int,N),tuple(X)], Y) :-
+  when(nonvar(X), ( len(X,S), N #>= 1, N #=< S, elem(N,X,Y) ) ).
+bif('element',[lit(int,N),tuple(X)], error(badarg)) :-
+  N #>= 1, when(nonvar(X), ( len(X,S), N #> S ) ).
+bif('element',[lit(int,N),_Arg2], error(badarg)) :-
   N #=< 0.
-bif(lit(atom,erlang),lit(atom,'element'),[lit(int,N),Arg2], error(badarg)) :-
+bif('element',[lit(int,N),Arg2], error(badarg)) :-
   N #>= 1, when(nonvar(Arg2), Arg2 \= tuple(_)).
-bif(lit(atom,erlang),lit(atom,'element'),[Arg1,_Arg2], error(badarg)) :-
-  when(nonvar(Arg1), Arg1 \= lit(int,_) ).
 
 elem(N,L,E) :-
   elem_(N,1,L,E).
@@ -459,6 +714,50 @@ elem_(N,M,[_|T],E) :-
   N \== M,
   L is M+1,
   elem_(N,L,T,E).
+%
+bif('element',[Arg1,Arg2], error(badarg)) :-
+  bif('delete_element',[Arg1,Arg2], error(badarg)).
+
+/** ----------------------------------------------------------------------------
+ *  error(Reason) -> no_return()
+ *
+ *    Types
+ *      Reason = term()
+ *
+ *    Stops the execution of the calling process with the reason Reason, where
+ *    Reason is any term. The exit reason is {Reason, Where}, where Where is a
+ *    list of the functions most recently called (the current function first).
+ *    As evaluating this function causes the process to terminate, it has no
+ *    return value. Example:
+ *
+ *      > catch error(foobar).
+ *        {'EXIT',{foobar,[{shell,apply_fun,3,
+ *                                [{file,"shell.erl"},{line,906}]},
+ *                  {erl_eval,do_apply,6,[{file,"erl_eval.erl"},{line,677}]},
+ *                  {erl_eval,expr,5,[{file,"erl_eval.erl"},{line,430}]},
+ *                  {shell,exprs,7,[{file,"shell.erl"},{line,687}]},
+ *                  {shell,eval_exprs,7,[{file,"shell.erl"},{line,642}]},
+ *                  {shell,eval_loop,3,[{file,"shell.erl"},{line,627}]}]}}
+ */
+bif('error',[Reason],error(Reason)).
+
+/** ----------------------------------------------------------------------------
+ *   error(Reason, Args) -> no_return()
+ *
+ *     Types
+ *       Reason = term()
+ *       Args = [term()]
+ *
+ *     Stops the execution of the calling process with the reason Reason, where
+ *     Reason is any term. The exit reason is {Reason, Where}, where Where is a
+ *     list of the functions most recently called (the current function first).
+ *     Args is expected to be the list of arguments for the current function;
+ *     in Beam it is used to provide the arguments for the current function in
+ *     the term Where. As evaluating this function causes the process to
+ *     terminate, it has no return value.
+ */
+% TODO: the 'error' in eval/3 should be extended to deal with this function
+bif('error',[Reason,_Args],error(Reason)).
 
 /** ----------------------------------------------------------------------------
  *  float(Number) -> float()
@@ -480,11 +779,12 @@ elem_(N,M,[_|T],E) :-
  *    When float/1 is used in an expression in a guard, such as 'float(A) ==
  *    4.0', it converts a number as described earlier.
  */
-bif(lit(atom,erlang),lit(atom,'float'),[lit(int,N)],   lit(float,F)) :-
+bif('float',[lit(int,N)], lit(float,F)) :-
   { F =:= N }.
-bif(lit(atom,erlang),lit(atom,'float'),[lit(float,N)], lit(float,N)).
-bif(lit(atom,erlang),lit(atom,'float'),[Arg], error(badarg)) :-
-  when(nonvar(Arg), ( Arg \= lit(int,_), Arg \= lit(float,_) )).
+bif('float',[lit(float,N)], lit(float,N)).
+%
+bif('float',[Arg], error(badarg)) :-
+  when(nonvar(Arg), ( Arg \= lit(int,_), Arg \= lit(float,_) ) ).
 
 /** ----------------------------------------------------------------------------
  *  float_to_list(Float) -> string()
@@ -556,22 +856,23 @@ bif(lit(atom,erlang),lit(atom,'float'),[Arg], error(badarg)) :-
  *    > floor(-1.1).
  *    -2
  *
- *    bif(lit(atom,erlang),lit(atom,'floor'),[lit(float,1.0)], lit(int,C)).
- *    bif(lit(atom,erlang),lit(atom,'floor'),[lit(float,1.1)], lit(int,C)).
- *    bif(lit(atom,erlang),lit(atom,'floor'),[lit(float,-1.0)], lit(int,C)).
- *    bif(lit(atom,erlang),lit(atom,'floor'),[lit(float,-1.1)], lit(int,C)).
+ *    bif('floor',[lit(float,1.0)], lit(int,C)).
+ *    bif('floor',[lit(float,1.1)], lit(int,C)).
+ *    bif('floor',[lit(float,-1.0)], lit(int,C)).
+ *    bif('floor',[lit(float,-1.1)], lit(int,C)).
  *
  *  https://proofwiki.org/wiki/Floor_of_Negative_equals_Negative_of_Ceiling
  */
-bif(lit(atom,erlang),lit(atom,'floor'),[lit(int,N)],   lit(int,N)).
-bif(lit(atom,erlang),lit(atom,'floor'),[lit(float,N)], lit(int,F)) :-
+bif('floor',[lit(int,N)], lit(int,N)).
+bif('floor',[lit(float,N)], lit(int,F)) :-
   { N >= 0, F =< N }, F #>= 0,
   when(nonvar(N), ( V is floor(N), F #= V ) ).
-bif(lit(atom,erlang),lit(atom,'floor'),[lit(float,N)], lit(int,F)) :-
+bif('floor',[lit(float,N)], lit(int,F)) :-
   { N < 0, F =< N, M = -N }, F #=< -1, F #= -V,
-  bif(lit(atom,erlang),lit(atom,'ceil'),[lit(float,M)], lit(int,V)).
-bif(lit(atom,erlang),lit(atom,'floor'),[Arg], error(badarg)) :-
-  when(nonvar(Arg), ( Arg \= lit(int,_), Arg \= lit(float,_) )).
+  bif('ceil',[lit(float,M)], lit(int,V)).
+%
+bif('floor',[Arg], error(badarg)) :-
+  when(nonvar(Arg), ( Arg \= lit(int,_), Arg \= lit(float,_) ) ).
 
 /** ----------------------------------------------------------------------------
  *  hd(List) -> term()
@@ -588,9 +889,10 @@ bif(lit(atom,erlang),lit(atom,'floor'),[Arg], error(badarg)) :-
  *
  *  Failure: badarg if List is the empty list [].
  */
-bif(lit(atom,erlang),lit(atom,'hd'),[list([H|_])], H).
-bif(lit(atom,erlang),lit(atom,'hd'),[Arg], error(badarg)) :-
-  when(nonvar(Arg), Arg \= list(_) ).
+bif('hd',[list([H|_])], H).
+%
+bif('hd',[Arg], error(badarg)) :-
+  when(nonvar(Arg), ( Arg \= list(_) ; Arg = list([]) ) ).
 
 /** ----------------------------------------------------------------------------
  *  erlang:insert_element(Index, Tuple1, Term) -> Tuple2
@@ -607,15 +909,15 @@ bif(lit(atom,erlang),lit(atom,'hd'),[Arg], error(badarg)) :-
  *    > erlang:insert_element(2, {one, two, three}, new).
  *    {one,new,two,three}
 */
-bif(lit(atom,erlang),lit(atom,'insert_element'),[lit(int,N),tuple(X),E], tuple(Y)) :-
-  when(nonvar(X), ( length(X,S), N #>= 1, N #=< S, ins_elem(N,X,E,Y) ) ).
-bif(lit(atom,erlang),lit(atom,'insert_element'),[lit(int,N),tuple(X),_E], error(badarg)) :-
-  N #>= 1, when(nonvar(X), ( length(X,S), N #> S ) ).
-bif(lit(atom,erlang),lit(atom,'insert_element'),[lit(int,N),_Arg2,_E], error(badarg)) :-
+bif('insert_element',[lit(int,N),tuple(X),E], tuple(Y)) :-
+  when(nonvar(X), ( len(X,S), N #>= 1, N #=< S, ins_elem(N,X,E,Y) ) ).
+bif('insert_element',[lit(int,N),tuple(X),_E], error(badarg)) :-
+  N #>= 1, when(nonvar(X), ( len(X,S), N #> S ) ).
+bif('insert_element',[lit(int,N),_Arg2,_E], error(badarg)) :-
   N #=< 0.
-bif(lit(atom,erlang),lit(atom,'insert_element'),[lit(int,N),Arg2,_E], error(badarg)) :-
+bif('insert_element',[lit(int,N),Arg2,_E], error(badarg)) :-
   N #>= 1, when(nonvar(Arg2), Arg2 \= tuple(_)).
-bif(lit(atom,erlang),lit(atom,'insert_element'),[Arg1,_Arg2,_E], error(badarg)) :-
+bif('insert_element',[Arg1,_Arg2,_E], error(badarg)) :-
   when(nonvar(Arg1), Arg1 \= lit(int,_) ).
 
 ins_elem(N,L1,E,L2) :-
@@ -626,6 +928,9 @@ ins_elem_(N,M,[H|T1],E,[H|T2]) :-
   N \== M,
   L is M+1,
   ins_elem_(N,L,T1,E,T2).
+%
+bif('insert_element',[Arg1,Arg2,Arg2], error(badarg)) :-
+  bif('delete_element',[Arg1,Arg2], error(badarg)).
 
 /** ----------------------------------------------------------------------------
  *  integer_to_list(Integer) -> string()
@@ -639,10 +944,11 @@ ins_elem_(N,M,[H|T1],E,[H|T2]) :-
  *    > integer_to_list(77).
  *    "77"
  */
-bif(lit(atom,erlang),lit(atom,'integer_to_list'),[lit(int,N)], L) :-
+bif('integer_to_list',[lit(int,N)], L) :-
   when(nonvar(N), atom_to_list(N,L)).
-bif(lit(atom,erlang),lit(atom,'integer_to_list'),[Term], error(badarg)) :-
-  when(nonvar(Term), Term \= lit(int,_)).
+%
+bif('integer_to_list',[Arg], error(badarg)) :-
+  when(nonvar(Arg), Arg \= lit(int,_) ).
 
 /** ----------------------------------------------------------------------------
  *  integer_to_list(Integer, Base) -> string()
@@ -668,9 +974,7 @@ bif(lit(atom,erlang),lit(atom,'integer_to_list'),[Term], error(badarg)) :-
  *
  *    Allowed in guard tests.
  */
-bif(lit(atom,erlang),lit(atom,'is_atom'),[lit(atom,_)], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'is_atom'),[Term], lit(atom,false)) :-
-  when(nonvar(Term), Term \= lit(atom,_)).
+bif('is_atom',[lit(atom,_)], lit(atom,true)).
 
 /** ----------------------------------------------------------------------------
  *  is_float(Term) -> boolean()
@@ -682,9 +986,7 @@ bif(lit(atom,erlang),lit(atom,'is_atom'),[Term], lit(atom,false)) :-
  *
  *    Allowed in guard tests.
  */
-bif(lit(atom,erlang),lit(atom,'is_float'),[lit(float,_)], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'is_float'),[Term], lit(atom,false)) :-
-  when(nonvar(Term), Term \= lit(float,_)).
+bif('is_float',[lit(float,_)], lit(atom,true)).
 
 /** ----------------------------------------------------------------------------
  *  is_function(Term) -> boolean()
@@ -720,9 +1022,7 @@ bif(lit(atom,erlang),lit(atom,'is_float'),[Term], lit(atom,false)) :-
  *
  *    Allowed in guard tests.
  */
-bif(lit(atom,erlang),lit(atom,'is_integer'),[lit(int,_)], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'is_integer'),[Term], lit(atom,false)) :-
-  when(nonvar(Term), Term \= lit(int,_)).
+bif('is_integer',[lit(int,_)], lit(atom,true)).
 
 /** ----------------------------------------------------------------------------
  *  is_list(Term) -> boolean()
@@ -735,9 +1035,7 @@ bif(lit(atom,erlang),lit(atom,'is_integer'),[Term], lit(atom,false)) :-
  *
  *    Allowed in guard tests.
  */
-bif(lit(atom,erlang),lit(atom,'is_list'),[list(_)], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'is_list'),[Term], lit(atom,false)) :-
-  when(nonvar(Term), ( Term \= list(_) ) ).
+bif('is_list',[list(_)], lit(atom,true)).
 
 /** ----------------------------------------------------------------------------
  *  is_number(Term) -> boolean()
@@ -749,11 +1047,9 @@ bif(lit(atom,erlang),lit(atom,'is_list'),[Term], lit(atom,false)) :-
  *    Otherwise returns false.
  *
  *    Allowed in guard tests.
-*/
-bif(lit(atom,erlang),lit(atom,'is_number'),[lit(int,_)], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'is_number'),[lit(float,_)], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'is_number'),[Term], lit(atom,false)) :-
-  when(nonvar(Term), ( Term \= lit(int,_), Term \= lit(float,_) )).
+ */
+bif('is_number',[lit(int,_)], lit(atom,true)).
+bif('is_number',[lit(float,_)], lit(atom,true)).
 
 /** ----------------------------------------------------------------------------
  *  is_tuple(Term) -> boolean()
@@ -765,9 +1061,7 @@ bif(lit(atom,erlang),lit(atom,'is_number'),[Term], lit(atom,false)) :-
  *
  *    Allowed in guard tests.
  */
-bif(lit(atom,erlang),lit(atom,'is_tuple'),[tuple(_)], lit(atom,true)).
-bif(lit(atom,erlang),lit(atom,'is_tuple'),[Arg], lit(atom,false)) :-
-  when(nonvar(Arg), Arg \= tuple(_) ).
+bif('is_tuple',[tuple(_)], lit(atom,true)).
 
 /** ----------------------------------------------------------------------------
  *  length(List) -> integer() >= 0
@@ -779,18 +1073,19 @@ bif(lit(atom,erlang),lit(atom,'is_tuple'),[Arg], lit(atom,false)) :-
  *
  *    > length([1,2,3,4,5,6,7,8,9]).
  *    9
-*/
-bif(lit(atom,erlang),lit(atom,'length'),[list(L)], lit(int,N)) :-
+ */
+bif('length',[list(L)], lit(int,N)) :-
   N #>= 0,
   when(nonvar(L), len(L,N)).
-bif(lit(atom,erlang),lit(atom,'length'),[Arg], error(badarg)) :-
-  when(nonvar(Arg), Arg \= list(_) ).
-
+%
 len([],N) :-
   N #= 0.
 len([_|T],M) :-
   M #= N+1, M #>= 1,
   when(nonvar(T), len(T,N) ).
+%
+bif('length',[Arg], error(badarg)) :-
+  when(nonvar(Arg), Arg \= list(_) ).
 
 /** ----------------------------------------------------------------------------
  *  max(Term1, Term2) -> Maximum
@@ -801,35 +1096,12 @@ len([_|T],M) :-
  *    Returns the largest of Term1 and Term2. If the terms are equal, Term1
  *    is returned.
  */
-bif(lit(atom,erlang),lit(atom,'max'),[lit(int,A),lit(int,B)], lit(int,M)) :-
-  max_int(A,B,M).
-
-max_int(A,B,A) :- A #= B.
-max_int(A,B,A) :- A #> B.
-max_int(A,B,B) :- A #< B.
-
-bif(lit(atom,erlang),lit(atom,'max'),[lit(float,A),lit(float,B)], lit(float,M)) :-
-  max_float(A,B,M).
-
-max_float(A,B,A) :- { A =:= B }.
-max_float(A,B,A) :- { A > B }.
-max_float(A,B,B) :- { A < B }.
-
-bif(lit(atom,erlang),lit(atom,'max'),[lit(T1,A),lit(T2,B)], lit(T1,A)) :-
-  bif(lit(atom,erlang),lit(atom,'is_number'),[lit(T1,A)], lit(atom,true)),
-  bif(lit(atom,erlang),lit(atom,'is_number'),[lit(T2,B)], lit(atom,true)),
-  dif(T1,T2),
-  { A =:= B }.
-bif(lit(atom,erlang),lit(atom,'max'),[lit(T1,A),lit(T2,B)], lit(T1,A)) :-
-  bif(lit(atom,erlang),lit(atom,'is_number'),[lit(T1,A)], lit(atom,true)),
-  bif(lit(atom,erlang),lit(atom,'is_number'),[lit(T2,B)], lit(atom,true)),
-  dif(T1,T2),
-  { A > B }.
-bif(lit(atom,erlang),lit(atom,'max'),[lit(T1,A),lit(T2,B)], lit(T2,B)) :-
-  bif(lit(atom,erlang),lit(atom,'is_number'),[lit(T1,A)], lit(atom,true)),
-  bif(lit(atom,erlang),lit(atom,'is_number'),[lit(T2,B)], lit(atom,true)),
-  dif(T1,T2),
-  { A < B }.
+bif('max',[Arg1,Arg2], Exp) :-
+  bif('<',[Arg1,Arg2], lit(atom,Res)),
+  max_cont(Res,[Arg1,Arg2],Exp).
+%
+max_cont(false,[Arg1,_Arg2],Arg1).
+max_cont(true, [_Arg1,Arg2],Arg2).
 
 /** ----------------------------------------------------------------------------
  *  min(Term1, Term2) -> Minimum
@@ -839,37 +1111,41 @@ bif(lit(atom,erlang),lit(atom,'max'),[lit(T1,A),lit(T2,B)], lit(T2,B)) :-
  *
  *    Returns the smallest of Term1 and Term2. If the terms are equal,
  *    Term1 is returned.
-*/
-bif(lit(atom,erlang),lit(atom,'min'),[lit(int,A),lit(int,B)], lit(int,M)) :-
-  min_int(A,B,M).
+ */
+bif('min',[Arg1,Arg2], Exp) :-
+  bif('>',[Arg1,Arg2], lit(atom,Res)),
+  min_cont(Res,[Arg1,Arg2],Exp).
+%
+min_cont(false,[Arg1,_Arg2],Arg1).
+min_cont(true, [_Arg1,Arg2],Arg2).
 
-min_int(A,B,A) :- A #= B.
-min_int(A,B,A) :- A #< B.
-min_int(A,B,B) :- A #> B.
+/** ----------------------------------------------------------------------------
+ *  erlang:nif_error(Reason) -> no_return()
+ *
+ *    Types
+ *      Reason = term()
+ *
+ *    Works exactly like error/1, but Dialyzer thinks that this BIF will return
+ *    an arbitrary term. When used in a stub function for a NIF to generate an
+ *    exception when the NIF library is not loaded, Dialyzer does not generate
+ *    false warnings.
+ */
+bif('nif_error',[Reason], Out) :-
+  bif('error',[Reason], Out).
 
-bif(lit(atom,erlang),lit(atom,'min'),[lit(float,A),lit(float,B)], lit(float,M)) :-
-  min_float(A,B,M).
-
-min_float(A,B,A) :- { A =:= B }.
-min_float(A,B,A) :- { A < B }.
-min_float(A,B,B) :- { A > B }.
-
-
-bif(lit(atom,erlang),lit(atom,'min'),[lit(T1,A),lit(T2,B)], lit(T1,A)) :-
-  bif(lit(atom,erlang),lit(atom,'is_number'),[lit(T1,A)], lit(atom,true)),
-  bif(lit(atom,erlang),lit(atom,'is_number'),[lit(T2,B)], lit(atom,true)),
-  dif(T1,T2),
-  { A =:= B }.
-bif(lit(atom,erlang),lit(atom,'min'),[lit(T1,A),lit(T2,B)], lit(T1,A)) :-
-  bif(lit(atom,erlang),lit(atom,'is_number'),[lit(T1,A)], lit(atom,true)),
-  bif(lit(atom,erlang),lit(atom,'is_number'),[lit(T2,B)], lit(atom,true)),
-  dif(T1,T2),
-  { A < B }.
-bif(lit(atom,erlang),lit(atom,'min'),[lit(T1,A),lit(T2,B)], lit(T2,B)) :-
-  bif(lit(atom,erlang),lit(atom,'is_number'),[lit(T1,A)], lit(atom,true)),
-  bif(lit(atom,erlang),lit(atom,'is_number'),[lit(T2,B)], lit(atom,true)),
-  dif(T1,T2),
-  { A > B }.
+/** ----------------------------------------------------------------------------
+ *  erlang:nif_error(Reason, Args) -> no_return()
+ *
+ *    Types
+ *      Reason = term()
+ *      Args = [term()]
+ *
+ *    Works exactly like error/2, but Dialyzer thinks that this BIF will return
+ *    an arbitrary term. When used in a stub function for a NIF to generate an
+ *    exception when the NIF
+ */
+bif('nif_error',[Reason,Args], Out) :-
+  bif('error',[Reason,Args], Out).
 
 /** ----------------------------------------------------------------------------
  *  round(Number) -> integer()
@@ -896,24 +1172,24 @@ bif(lit(atom,erlang),lit(atom,'min'),[lit(T1,A),lit(T2,B)], lit(T2,B)) :-
  *    > round(-3.4).
  *    -3
  *
- *    bif(lit(atom,erlang),lit(atom,'round'),[lit(float,3.0)],lit(int,N)).
- *    bif(lit(atom,erlang),lit(atom,'round'),[lit(float,3.5)],lit(int,N)).
- *    bif(lit(atom,erlang),lit(atom,'round'),[lit(float,-3.5)],lit(int,N)).
- *    bif(lit(atom,erlang),lit(atom,'round'),[lit(float,-3.4)],lit(int,N)).
-*/
-bif(lit(atom,erlang),lit(atom,'round'),[lit(int,N)],   lit(int,N)).
-bif(lit(atom,erlang),lit(atom,'round'),[lit(float,R)], lit(int,N)) :-
+ *    bif('round',[lit(float,3.0)],lit(int,N)).
+ *    bif('round',[lit(float,3.5)],lit(int,N)).
+ *    bif('round',[lit(float,-3.5)],lit(int,N)).
+ *    bif('round',[lit(float,-3.4)],lit(int,N)).
+ */
+bif('round',[lit(int,N)], lit(int,N)).
+bif('round',[lit(float,R)], lit(int,N)) :-
   { R >= 0, N - R =< 0.5, R < N },
   when(nonvar(R), N is round(R)).
-bif(lit(atom,erlang),lit(atom,'round'),[lit(float,R)], lit(int,N)) :-
+bif('round',[lit(float,R)], lit(int,N)) :-
   { R >= 0, N =< R, R - N < 0.5 },
   when(nonvar(R), N is round(R)).
-bif(lit(atom,erlang),lit(atom,'round'),[lit(float,R)], lit(int,N)) :-
+bif('round',[lit(float,R)], lit(int,N)) :-
   { R < 0, P = -R }, N #= -S,
-  bif(lit(atom,erlang),lit(atom,'round'),[lit(float,P)], lit(int,S)).
-bif(lit(atom,erlang),lit(atom,'round'),[Arg], error(badarg)) :-
-  when(nonvar(Arg), ( Arg \= lit(int,_), Arg \= lit(float,_) )).
-
+  bif('round',[lit(float,P)], lit(int,S)).
+%
+bif('round',[Arg], error(badarg)) :-
+  when(nonvar(Arg), ( Arg \= lit(int,_), Arg \= lit(float,_) ) ).
 /** ----------------------------------------------------------------------------
  *  setelement(Index, Tuple1, Value) -> Tuple2
  *
@@ -929,7 +1205,7 @@ bif(lit(atom,erlang),lit(atom,'round'),[Arg], error(badarg)) :-
  *
  *    > setelement(2, {10, green, bottles}, red).
  *    {10,red,bottles}
-*/
+ */
 
 
 /** ----------------------------------------------------------------------------
@@ -953,13 +1229,14 @@ bif(lit(atom,erlang),lit(atom,'round'),[Arg], error(badarg)) :-
  *    Allowed in guard tests.
  *
  *    See also tuple_size/1, byte_size/1, and bit_size/1.
-*/
-bif(lit(atom,erlang),lit(atom,'size'),[tuple(T)], S) :-
-  bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(T)], S).
-%TODO: to add support for binary()
-bif(lit(atom,erlang),lit(atom,'size'),[Arg], error(badarg)) :-
+ */
+bif('size',[tuple(T)], S) :-
+  bif('tuple_size',[tuple(T)], S).
+%
+bif('size',[Arg], error(badarg)) :-
   when(nonvar(Arg), Arg \= tuple(_) ).
-
+%TODO: to add support for binary()
+%
 /** ----------------------------------------------------------------------------
  *  tl(List) -> term()
  *
@@ -975,11 +1252,12 @@ bif(lit(atom,erlang),lit(atom,'size'),[Arg], error(badarg)) :-
  *    Allowed in guard tests.
  *
  *    Failure: badarg if List is the empty list [].
-*/
-bif(lit(atom,erlang),lit(atom,'tl'),[list([_H|T])], T).
-bif(lit(atom,erlang),lit(atom,'tl'),[Arg], error(badarg)) :-
+ */
+bif('tl',[list([_H|T])], T).
+bif('tl',[list([])], error(badarg)).
+%
+bif('tl',[Arg], error(badarg)) :-
   when(nonvar(Arg), Arg \= list(_) ).
-
 /** ----------------------------------------------------------------------------
  *  trunc(Number) -> integer()
  *
@@ -992,17 +1270,17 @@ bif(lit(atom,erlang),lit(atom,'tl'),[Arg], error(badarg)) :-
  *    5
  *
  *    Allowed in guard tests.
-*/
-bif(lit(atom,erlang),lit(atom,'trunc'),[lit(int,N)], lit(int,N)).
-bif(lit(atom,erlang),lit(atom,'trunc'),[lit(float,N)], lit(int,I)) :-
+ */
+bif('trunc',[lit(int,N)], lit(int,N)).
+bif('trunc',[lit(float,N)], lit(int,I)) :-
   { N >= 0 }, I #>= 0,
-  bif(lit(atom,erlang),lit(atom,'floor'),[lit(float,N)], lit(int,I)).
-bif(lit(atom,erlang),lit(atom,'trunc'),[lit(float,N)], lit(int,I)) :-
+  bif('floor',[lit(float,N)], lit(int,I)).
+bif('trunc',[lit(float,N)], lit(int,I)) :-
   { N < 0 }, I #=< -1,
-  bif(lit(atom,erlang),lit(atom,'ceil'),[lit(float,N)], lit(int,I)).
-bif(lit(atom,erlang),lit(atom,'trunc'),[Arg], error(badarg)) :-
+  bif('ceil',[lit(float,N)], lit(int,I)).
+%
+bif('trunc',[Arg], error(badarg)) :-
   when(nonvar(Arg), ( Arg \= lit(int,_), Arg \= lit(float,_) ) ).
-
 /** ----------------------------------------------------------------------------
  *  tuple_size(Tuple) -> integer() >= 0
  *
@@ -1015,9 +1293,10 @@ bif(lit(atom,erlang),lit(atom,'trunc'),[Arg], error(badarg)) :-
  *    3
  *
  *    Allowed in guard tests.
-*/
-bif(lit(atom,erlang),lit(atom,'tuple_size'),[tuple(T)], lit(int,S)) :-
+ */
+bif('tuple_size',[tuple(T)], lit(int,S)) :-
   S #>= 0,
-  when(nonvar(T), length(T,S) ).
-bif(lit(atom,erlang),lit(atom,'tuple_size'),[Arg], error(badarg)) :-
+  when(nonvar(T), len(T,S) ).
+%
+bif('tuple_size',[Arg], error(badarg)) :-
   when(nonvar(Arg), Arg \= tuple(_) ).
