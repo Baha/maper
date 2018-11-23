@@ -1,11 +1,12 @@
+:- multifile user:file_search_path/2.
+user:file_search_path(erlang_module,modules).
+
 :- use_module('match').
 :- include('utils').
 
 :- use_module(library(lists)).
 :- use_module(library(terms)).
-
-:- multifile user:file_search_path/2.
-user:file_search_path(erlang_module,modules).
+:- use_module(erlang_module(erlang)).
 
 :- discontiguous eval/3.
 
@@ -37,18 +38,23 @@ eval(lit(Type,Val),_Env,lit(Type,Val)).
 %% (Var)
 eval(var(Var),Env,Val) :-
   memberchk((Var,Val),Env).
-%% (List)
-eval(list(Elems),Env,list(FElems)) :-
-  eval_list(Elems,Env,FElems).
 %% (Tuple)
-eval(tuple(Elems),Env,tuple(FElems)) :-
-  eval_list(Elems,Env,FElems).
+eval(tuple([]),_Env,tuple([])).
+eval(tuple([Exp|Exps]),Env,tuple([FExp|FExps])) :-
+  eval(Exp,Env,FExp),
+  eval(tuple(Exps),Env,tuple(FExps)).
+%% (Nil)
+eval(nil,_Env,nil).
+%% (List)
+eval(cons(Exp,Exps),Env,cons(FExp,FExps)) :-
+  eval(Exp,Env,FExp),
+  eval(Exps,Env,FExps).
 
 % evaluate a list of expressions
 eval_list([],_Env,[]).
 eval_list([Exp|Exps],Env,[FExp|FExps]) :-
   eval(Exp,Env,FExp),
-  eval_list(Exps,Env,FExps).
+eval_list(Exps,Env,FExps).
 
 %% (Seq) -----------------------------------------------------------------------
 % returns the evaluation of the last expression
@@ -88,9 +94,7 @@ eval(apply(FName,IExps),Env,Exp) :-
   eval(FunBody,AppBinds,Exp).
 
 %% (Call) ----------------------------------------------------------------------
-eval(call(lit(atom,Module),lit(atom,Name),IExps),Env,Exp) :-
-  Module == erlang,
-  use_module(erlang_module(Module)),
+eval(call(lit(atom,erlang),lit(atom,Name),IExps),Env,Exp) :-
   call_cont(Name,IExps,Env,Exp).
 %
 eval(call(lit(atom,Module),lit(atom,Name),IExps),Env,Exp) :-

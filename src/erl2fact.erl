@@ -60,13 +60,11 @@ cerl2fact(Node) ->
             N -> cerl2fact([element(I,Tuple) || I <- lists:seq(1,N)])
           end,
           ?TUPLE_PRED(NewTuple);
+        [] -> ?NIL_ATOM;
         List when is_list(List) ->
-          ListLength = length(List),
-          NewList = case ListLength of
-            0 -> ?LIST_START ++ ?LIST_END;
-            _ -> cerl2fact(List)
-          end,
-          ?LIST_PRED(NewList);
+          ListConsHead = cerl2fact(cerl:cons_hd(Node)),
+          ListConsTail = cerl2fact(cerl:cons_tl(Node)),
+          ?CONS_PRED(ListConsHead, ListConsTail);
         Unsupported ->
           UStr = io_lib:format("~p",[Unsupported]),
           io:fwrite(standard_error,"~s~s~n",
@@ -85,15 +83,11 @@ cerl2fact(Node) ->
           ?VAR_PRED(FactVarName)
         end;
     cons ->
-      case cerl:is_c_list(Node) of
-        true ->
-          ProperList = cerl2fact(cerl:list_elements(Node)),
-          ?LIST_PRED(ProperList);
-        false ->
-          Head = cerl2fact(cerl:cons_hd(Node)),
-          Tail = cerl2fact(cerl:cons_tl(Node)),
-          ?CONS_PRED(Head, Tail)
-      end;
+      CoreConsHead = cerl:cons_hd(Node),
+      CoreConsTail = cerl:cons_tl(Node),
+      FactConsHead = cerl2fact(CoreConsHead),
+      FactConsTail = cerl2fact(CoreConsTail),
+      ?CONS_PRED(FactConsHead, FactConsTail);
     tuple ->
       CoreTupleEs = cerl:tuple_es(Node),
       FactTupleEs = cerl2fact(CoreTupleEs),
@@ -135,7 +129,7 @@ cerl2fact(Node) ->
       CoreApplyArgs = cerl:apply_args(Node),
       FactApplyOp = cerl2fact(CoreApplyOp),
       FactApplyArgs = cerl2fact(CoreApplyArgs),
-      ?APPLY_PRED(FactApplyOp, FactApplyArgs);          
+      ?APPLY_PRED(FactApplyOp, FactApplyArgs);
     call ->
       CoreCallMod = cerl:call_module(Node),
       CoreCallName = cerl:call_name(Node),
