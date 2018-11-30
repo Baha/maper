@@ -1,17 +1,23 @@
-:- multifile user:file_search_path/2.
-user:file_search_path(erlang_module,modules).
+:- module(eval,
+    [ eval/3
+    , run_prog/4
+    ]).
 
-:- use_module('match').
-:- include('utils').
+:- multifile user:file_search_path/2.
+:- dynamic user:file_search_path/2.
+
+user:file_search_path(erlang_module,modules).
 
 :- use_module(library(lists)).
 :- use_module(library(terms)).
-:- use_module(erlang_module(erlang)).
+:- use_module(erlang_module(erlang)). % BIFs
+:- use_module('match').
+:- include('utils').
 
 :- discontiguous eval/3.
 
-:- dynamic user:fundef/3.
-:- multifile user:fundef/3.
+:- dynamic fundef/3.
+:- multifile fundef/3.
 
 %% run(mod,fun,args,final_env,final_exp)
 %% loads mod and evaluates fun (from mod)
@@ -54,7 +60,7 @@ eval(cons(Exp,Exps),Env,cons(FExp,FExps)) :-
 eval_list([],_Env,[]).
 eval_list([Exp|Exps],Env,[FExp|FExps]) :-
   eval(Exp,Env,FExp),
-eval_list(Exps,Env,FExps).
+  eval_list(Exps,Env,FExps).
 
 %% (Seq) -----------------------------------------------------------------------
 % returns the evaluation of the last expression
@@ -66,6 +72,13 @@ eval_list(Exps,Env,FExps).
 eval(seq(Exp,Exps),Env,FExp) :-
   eval(Exp,Env,_Exp1),
   eval(Exps,Env,FExp).
+
+%% (Block) ---------------------------------------------------------------------
+eval(block([Exp]),Env,FExp) :-
+  eval(Exp,Env,FExp).
+eval(block([Exp|Exps]),Env,FExp) :-
+  eval(Exp,Env,_),
+  eval(block(Exps),Env,FExp).
 
 %% (Let) -----------------------------------------------------------------------
 eval(let([var(Var)],Expr1,Expr2),Env,Expr) :-
