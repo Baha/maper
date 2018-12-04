@@ -4,25 +4,20 @@
 %typeof(X,integer) :- integer(X).
 %typeof(X,integer(2,5)) :- integer(X,2,5).
 
-% general form
 typeof(X,T) :- T =.. [F|As], length(As,L),
               proper_function_to_prolog_predicate(F,L,P),
               T1 =.. [P,X|As], T1.
 
-% proper_function_to_prolog_predicate(F,P)
 proper_function_to_prolog_predicate(integer,0,integer_) :- !.
 proper_function_to_prolog_predicate(float,0,float_) :- !.
 proper_function_to_prolog_predicate(number,0,number_) :- !.
 proper_function_to_prolog_predicate(atom,0,atom_) :- !.
 proper_function_to_prolog_predicate(F,_,F).
 
-% TODO: use goal goal_expansion?
-
-% X #>= inf gives error  ,  X in L..H requires inf/sup or integer for extremes
+% TODO: use goal_expansion?
 
 
-% TODO: integer(lit(int,X),Low,High) :-  ?????? ... everywhere
-integer(X,Low,High) :-
+integer(lit(int,X),Low,High) :-
   ((High==inf) ->
       ((Low==inf) -> X in inf..sup ; X #>= Low)
     ;
@@ -42,29 +37,8 @@ integer(X,Low,High) :-
 % integer(X,A,2).
 
 
-% ?- integer(X,inf,inf).
-% X in inf..sup.
-% ?- integer(X,inf,A).
-% A#>=X.
-% ?- integer(X,inf,2).
-% X in inf..2.
-% ?- integer(X,A,inf).
-% X#>=A.
-% ?- integer(X,2,inf).
-% X in 2..sup.
-% ?- integer(X,2,3).
-% X in 2..3.
-% ?- integer(X,2,A).
-% X in 2..sup,
-% A#>=X,
-% A in 2..sup.
-% ?- integer(X,A,2).
-% X in inf..2,
-% X#>=A,
-% A in inf..2.
 
-
-float(X,Low,High) :-
+float(lit(float,X),Low,High) :-
   ((High==inf) ->
       ((Low==inf) -> clpr:{X=_} ; clpr:{X >= Low})
     ;
@@ -85,16 +59,19 @@ float(X,Low,High) :-
 
 % atom(X) built-in [ISO]
 % In both Erlang and Prolog strings are atoms http://erlang.org/doc/reference_manual/data_types.html#atom
-atom_(X) :- when((nonvar(X)), atom(X)).  %  X =.. [_F]
+atom_(lit(atom,X)) :- when((nonvar(X)), atom(X)).  %  X =.. [_F]
 
 
-list([],_).
-list([X|Xs],T) :-  typeof(X,T),  list(Xs,T).
 
-fixed_list([],[]).
-fixed_list([X|Xs],[T|Ts]) :-  typeof(X,T),   fixed_list(Xs,Ts).
+list(nil,_).
+list(cons(X,Xs),T) :-  typeof(X,T),  list(Xs,T).
+fixed_list(nil,nil).
+fixed_list(cons(X,Xs),cons(T,Ts)) :-  typeof(X,T),   fixed_list(Xs,Ts).
 
-vector(X, Len, Type) :- length(X,Len), list(X,Type).
+llength(nil,L) :- clpq:{L=0}.
+llength(cons(_,Xs),L) :- clpq:{L1>=0, L=1+L1}, llength(Xs,L1).
+
+vector(X, Len, Type) :- llength(X,Len), list(X,Type).
 
 
 union(X,ListOfTypes) :-
@@ -103,18 +80,24 @@ union(X,ListOfTypes) :-
 
 
 
+tuple([],[]).
+tuple([E|Es],[T|Ts]) :- typeof(E,T), tuple(Es,Ts).
+
+
 % {a,b,c} =.. L.
 % L = [{},  (a, b, c)].
 %
 % ?- (a,b,c) =.. L.
 % L = [',', a,  (b, c)].
+%
+%list_to_tuple([],{}).
+%list_to_tuple([X|Xs],T):-  dump:list_to_conj([X|Xs],C), T =.. [{},C].
+
+loose_tuple(X,Type) :- list_same_element(L,Type), tuple(X,L).
+list_same_element([],_).
+list_same_element([T|Xs],T) :-  list_same_element(Xs,T).
 
 
-tuple(X,ListOfTypes) :- list_types(L,ListOfTypes), list_to_tuple(L,X).
-list_to_tuple([],{}).
-list_to_tuple([X|Xs],T):-  dump:list_to_conj([X|Xs],C), T =.. [{},C].
-
-loose_tuple(X,Type) :- list(L,Type), list_to_tuple(L,X).
 
 exactly(X,Term) :- atom(Term), X=Term. % cfr X==Term
 
