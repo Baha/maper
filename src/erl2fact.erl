@@ -17,7 +17,11 @@ cerl2fact_mod(Node) ->
   CoreModuleName = cerl:module_name(Node),
   CoreModuleDefs =
     [{FName, FDef} || {FName, FDef} <- cerl:module_defs(Node),
-                     element(1,cerl:var_name(FName)) =/= 'module_info'],
+                     element(1,cerl:var_name(FName)) =/= 'module_info',
+                     element(2,cerl:var_name(FName)) > 0,
+                     not lists:prefix("prop_",
+                                      atom_to_list(element(1,
+                                                           cerl:var_name(FName))))],
   FactModuleDefs = [{CoreModuleName, FName, FDef} ||
                     {FName, FDef} <- CoreModuleDefs],
   FactFunDefs = [cerl2fact_fundef(FunDef) || FunDef <- FactModuleDefs],
