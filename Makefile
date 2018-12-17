@@ -9,7 +9,9 @@ HRL_FILES = \
 	maper_macros
 
 SRC_MODULES = \
-	erl2fact
+	erl2fact \
+	forms \
+	symgen
 
 ERL_DIRS = \
 	$(SRC)
