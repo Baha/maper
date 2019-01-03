@@ -27,6 +27,7 @@
 -define(PRIMOP_ATOM, "primop").
 -define(FUNDEF_ATOM, "fundef").
 -define(TRY_ATOM,    "try").
+-define(ALIAS_ATOM,  "alias").
 
 -define(INT_PRED(Int),
   ?INT_ATOM ++ ?ARG_SEP ++ Int).
@@ -124,3 +125,8 @@
   Body    ++ ?ARG_SEP ++
   EVars   ++ ?ARG_SEP ++
   Handler ++ ?ARG_END).
+
+- define(ALIAS_PRED(Var, Pat),
+  ?ALIAS_ATOM ++ ?ARG_START ++
+  Var ++ ?ARG_SEP ++
+  Pat ++ ?ARG_END).

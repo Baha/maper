@@ -60,6 +60,10 @@ match_expApat(IEnv,nil,nil, IEnv).
 match_expApat(IEnv,cons(Exp,Exps),cons(Pat,Pats), OEnv) :-
   match_expApat(IEnv,Exp,Pat, IEnv1),
   match_expApat(IEnv1,Exps,Pats, OEnv).
+% alias
+match_expApat(IEnv,Val,alias(var(Var),Pat), OEnv) :-
+  match_expApat(IEnv,Val,var(Var), IEnv1),
+  match_expApat(IEnv1,Val,Pat, OEnv).
 
 %% mismatch(+Exp,+Pat)
 % the expression Exp and the pattern Pat does not match
@@ -97,6 +101,11 @@ mismatch(Exp,cons(HdPat,TlPats)) :-
   when(nonvar(Exp), (
     Exp = cons(HdExp,TlExps),
     lists_mismatch(cons(HdExp,TlExps),cons(HdPat,TlPats)) )
+).
+% alias
+mismatch(Exp,alias(_PatVar,PatPat)) :-
+  when(nonvar(Exp),
+    mismatch(Exp,PatPat)
 ).
 
 %% tuples_mismatch(?ExpElems,+PatElems)

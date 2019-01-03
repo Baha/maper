@@ -164,7 +164,13 @@ cerl2fact(Node) ->
       Arg = cerl2fact(cerl:seq_arg(Node)),
       Seq = cerl2fact(cerl:seq_body(Node)),
       ?SEQ_PRED(Arg,Seq);
-    %% Catch-all case for literal values
+    alias ->
+      CoreVar = cerl:alias_var(Node),
+      CorePat = cerl:alias_pat(Node),
+      Var = cerl2fact(CoreVar),
+      Pat = cerl2fact(CorePat),
+      ?ALIAS_PRED(Var,Pat);
+    %% Catch-all case
     _ ->
       cerl2fact(lit2core(Node))
   end.

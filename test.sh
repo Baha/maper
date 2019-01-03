@@ -7,6 +7,7 @@ for test in biggest_bug biggest_ok delete_bug mytrees sorted_ok stack \
   cases cases_primop cases_primop_tuple cases_primop_tuple_2 \
   enc_apply enc_list enc_seq enc_tuple \
   factorial foo hello odd sum sum_tuple sum_list sign weird_fun; do
+     echo "Translating $test"
      cat $test_path"proper_types.pl" > $test".pl"
      echo >> $test".pl"
      $cmd_init$test$cmd_end >> $test".pl"
