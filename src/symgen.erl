@@ -27,21 +27,22 @@ generate_clauses(Fun) ->
   PropFun = get_propfun(Prop),
   FunName = erl_syntax:function_name(Fun),
   GenName = forms:from_abstract(FunName),
-  case {ProperMod, ProperCall} of
-    {proper,forall} ->
-      % io:format("FORALL (property)~n"),
-      ok;
-    {proper_types, add_constraint} ->
-      % io:format("SUCHTHAT (user-defined type)~n"),
-      ok;
-    {proper_types, bind} ->
-      % io:format("LET (user-defined type)~n"),
-      ok
-  end,
+  PropType =
+    case {ProperMod, ProperCall} of
+      {proper,forall} ->
+        % io:format("FORALL (property)~n"),
+        forall;
+      {proper_types, add_constraint} ->
+        % io:format("SUCHTHAT (user-defined type)~n"),
+        user_cons;
+      {proper_types, bind} ->
+        % io:format("LET (user-defined type)~n"),
+        user_bind
+    end,
   ZipVT = zip_vars_types(Vars, [Types]),
   HeadStr  = pp_head(GenName, ZipVT),
   TypesStr = pp_vars_types(ZipVT),
-  PropStr = "eval(" ++ pp_propfun(PropFun) ++ ",Env,Exp)",
+  PropStr = "eval(" ++ pp_propfun(PropFun) ++ "," ++ pp_var_list(ZipVT) ++ "," ++ pp_prop_exp(PropType) ++")",
   PpStr = HeadStr ++ TypesStr ++ "," ++ PropStr ++ ".",
   % PpStr = HeadStr ++ TypesStr ++ ".",
   io:format("~s~n~n", [PpStr]).%,
@@ -68,6 +69,7 @@ pp_head(GenName, VarsTypes) ->
   JointStr = string:join(VarsStr, ","),
   HeadStr = "gen_" ++ GenName ++ "((" ++ JointStr ++ ")) :- ",
   HeadStr.
+
 pp_var(ConsVars = {cons,_,_,_}) ->
   ConsList = forms:cons_to_list(ConsVars),
   PpVars = [pp_var(V) || V <- ConsList],
@@ -77,6 +79,27 @@ pp_var({tuple,_,Vars}) ->
   string:join(PpVars, ",");
 pp_var({var,_,Var}) ->
   atom_to_list(Var).
+
+pp_var_pair(ConsVars = {cons,_,_,_}) ->
+  ConsList = forms:cons_to_list(ConsVars),
+  PpVars = [pp_var_pair(V) || V <- ConsList],
+  string:join(PpVars, ",");
+pp_var_pair({tuple,_,Vars}) ->
+  PpVars = [pp_var_pair(V) || V <- Vars],
+  string:join(PpVars, ",");
+pp_var_pair({var,_,Var}) ->
+  VarStr = atom_to_list(Var),
+  "('" ++ VarStr ++ "'," ++ VarStr ++ ")".
+
+pp_var_list(VarsTypes) ->
+  VarsStr = [pp_var_pair(V) || {V,_} <- VarsTypes],
+  JointStr = string:join(VarsStr, ","),
+  ListStr = "[" ++ JointStr ++ "]",
+  ListStr.
+
+pp_prop_exp(user_cons) -> "lit(atom,true)";
+pp_prop_exp(user_bind) -> "lit(atom,true)";
+pp_prop_exp(_) -> "lit(atom,Res)".
 
 pp_vars_types(VarsTypes) ->
   TypeofStr = [pp_vt(V,T) || {V,T} <- VarsTypes],
@@ -118,12 +141,12 @@ pp_propfun({block,_,List}) ->
 pp_propfun({call,_,Call,Args}) ->
   PpArgs = [pp_propfun(A) || A <- Args],
   StrArgs = "[" ++ string:join(PpArgs, ",") ++ "]",
-  CallPred =
+  {CallPred, CallName} =
     case Call of
-      {remote,_,_,_} -> "call";
-      _ -> "apply"
+      {remote,_,_,_} -> {"call",pp_propfun(Call)};
+      _ -> {"apply", pp_propfun(Call, length(Args))}
     end,
-  CallPred ++ "(" ++ pp_propfun(Call) ++ "," ++ StrArgs ++ ")";
+  CallPred ++ "(" ++ CallName ++ "," ++ StrArgs ++ ")";
 pp_propfun({op,_,Op,Arg}) ->
   pp_propfun({call,0,{remote,0,{atom,0,erlang},{atom,0,Op}},[Arg]});
 pp_propfun({op,_,Op,Arg1,Arg2}) ->
@@ -135,3 +158,6 @@ pp_propfun({remote,_,Mod,Fun}) ->
 pp_propfun({var,_,Var}) ->
   "var('" ++ atom_to_list(Var) ++ "')";
 pp_propfun(_) -> "_".
+
+pp_propfun({atom,_,Atom}, NArgs) ->
+  "var('" ++ atom_to_list(Atom) ++ "'," ++ integer_to_list(NArgs) ++ ")".
