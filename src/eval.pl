@@ -6,12 +6,16 @@
 :- multifile user:file_search_path/2.
 :- dynamic user:file_search_path/2.
 
-user:file_search_path(erlang_module,modules).
+user:file_search_path(erlang_module,ModulesDir) :-
+  user:file_search_path(maper_src,Base),
+  atom_concat(Base, '/modules',ModulesDir).
+user:file_search_path(maper_src,'src').
 
 :- use_module(library(lists)).
 :- use_module(library(terms)).
+
 :- use_module(erlang_module(erlang)). % BIFs
-:- use_module('match').
+:- use_module(maper_src('match')).
 :- include('utils').
 
 :- discontiguous eval/3.
