@@ -261,14 +261,14 @@ gt_tuple([X|_Xs],[Y|_Ys]) :-
 * =:=
 */
 bif('=:=',[L1,L2], lit(atom,true)) :-
-  when((nonvar(L1),nonvar(L2)), L1 = L2 ).
+  L1 = L2.
 bif('=:=',[L1,L2], lit(atom,false)) :-
   bif('=/=',[L1,L2], lit(atom,true)).
 /** ----------------------------------------------------------------------------
  * =/=
  */
 bif('=/=',[L1,L2], lit(atom,true)) :-
-  when((nonvar(L1),nonvar(L2)), L1 \== L2 ).
+  dif(L1,L2).
 bif('=/=',[L1,L2], lit(atom,false)) :-
   bif('=:=',[L1,L2], lit(atom,true)).
 
