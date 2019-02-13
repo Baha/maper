@@ -19,7 +19,10 @@ main([FileName,PropName]) ->
       _:_ -> false
     end
   end,
-  PropFun = forms:filter(FiltPred, Forms),
-  io:format("~p~n", [PropFun]).
-  
-  
+  {ok, Input}  = io:read(""),
+  PropFuns = forms:filter(FiltPred, Forms),
+  % Handle case when |PropFuns| > 1
+  PropFun = lists:nth(1, PropFuns),
+  % io:format("~p~n", [PropFuns]).
+  PInput = testing:parse_input(Input, PropFun),
+  io:format("~p~n", [PInput]).
