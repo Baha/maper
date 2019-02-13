@@ -11,7 +11,8 @@ HRL_FILES = \
 SRC_MODULES = \
 	erl2fact \
 	forms \
-	symgen
+	symgen \
+	testing
 
 ERL_DIRS = \
 	$(SRC)
