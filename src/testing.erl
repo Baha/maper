@@ -7,11 +7,20 @@ main(FileName, PropName) ->
   % io:format("~p~n", [PropFun]),
   comp_load(AFileName),
   PropFun = get_propfun(FileName ++ ".erl", PropName),
+  io:format("~p~n", [PropFun]),
+
   FunClauses = erl_syntax:fun_expr_clauses(PropFun),
   FstClause = lists:nth(1,FunClauses),
   Vars = erl_syntax:clause_patterns(FstClause),
+  Body = erl_syntax:clause_body(FstClause),
+  Var = erl_syntax:variable("PropFun123"),
+  Fun = erl_syntax:match_expr(Var, PropFun),
+  Call = erl_syntax:revert(erl_syntax:application(Var, Vars)),
+  Block = erl_syntax:block_expr([Fun,Call]),
   io:format("~p~n", [Vars]),
-  read_lines(Vars).
+  % io:format("~p~n", [Body]),
+    io:format("~p~n", [Block]),
+  read_lines(Vars, Block).
 
 read_lines(Vars) ->
   Line = io:get_line(""),
