@@ -9,8 +9,9 @@ HRL_FILES = \
 	maper_macros
 
 SRC_MODULES = \
-	erl2fact \
 	forms \
+	smerl \
+	erl2fact \
 	symgen \
 	testing
 
