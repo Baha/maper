@@ -22,8 +22,9 @@ main(FileName, PropName) ->
     io:format("~p~n", [Block]),
   read_lines(Vars, Block).
 
-read_lines(Vars) ->
+read_lines(Vars, Call) ->
   Line = io:get_line(""),
+  %% TODO: Replace eof case by "\n" or other cases
   case Line of
     eof -> io:format("finish~n");
     Line ->
@@ -32,12 +33,24 @@ read_lines(Vars) ->
       {ok, Inputs} = erl_parse:parse_exprs(SLine),
       MI = match_inputs(Vars, Inputs),
       io:format("~p~n", [MI]),
-      read_lines(Vars)
+      M1 = smerl:new(prop_test),
+      F = erl_syntax:revert(erl_syntax:function(erl_syntax:atom(foo),
+        [erl_syntax:clause(none, [MI, Call])])),
+      % RForms = erl_syntax:revert(F),
+      io:format("~p~n", [F]),
+      %% TODO:
+      %%  1 .Add rest of funs so that they are defined
+      %%  2. Solve shadowing problems (rename to random vars)
+      {ok, M2} = smerl:add_func(M1, F),
+      smerl:compile(M2),
+      Result = prop_test:foo(),
+      io:format("~p~n", [Result]),
+      read_lines(Vars, Call)
   end.
 
 match_inputs(Vars, Inputs) ->
   ZipVI = lists:zip(Vars, Inputs),
-  erl_syntax:block_expr([erl_syntax:match_expr(V,I) || {V,I} <- ZipVI]).
+  erl_syntax:revert(erl_syntax:block_expr([erl_syntax:match_expr(V,I) || {V,I} <- ZipVI])).
 
 comp_load(FileName) ->
   % export_all required for non-exported funs
