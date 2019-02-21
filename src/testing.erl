@@ -2,6 +2,7 @@
 -export([main/2]).
 
 main(FileName, PropName) ->
+  put(free, 0),
   AFileName = list_to_atom(FileName),
   % PropFun = get_propfun(FileName, PropName),
   % io:format("~p~n", [PropFun]),
@@ -11,7 +12,7 @@ main(FileName, PropName) ->
 
   FunClauses = erl_syntax:fun_expr_clauses(PropFun),
   FstClause = lists:nth(1,FunClauses),
-  Vars = erl_syntax:clause_patterns(FstClause),
+  Vars = [free_named_var("TmpVar") || _ <- erl_syntax:clause_patterns(FstClause)],
   Body = erl_syntax:clause_body(FstClause),
   Var = erl_syntax:variable("PropFun123"),
   Fun = erl_syntax:match_expr(Var, PropFun),
@@ -73,27 +74,36 @@ get_propfun(FileName, PropName) ->
       _:_ -> false
     end
   end,
+  FiltRest = fun (Form) ->
+    try erl_syntax:type(Form) of
+      function ->
+        CFunName = erl_syntax:concrete(erl_syntax:function_name(Form)),
+        case CFunName of
+          APropName -> false;
+          _         -> true
+        end;
+      _ -> false
+    catch
+      _:_ -> false
+    end
+  end,
   Props = forms:filter(FiltPred, Forms),
+  RestFuns = forms:filter(FiltRest, Forms),
   % Handle case when |Props| > 1
   TargetProp = lists:nth(1, Props),
   PropClauses = erl_syntax:function_clauses(TargetProp),
   ClauseBody = erl_syntax:clause_body(hd(PropClauses)),
   {call,_,{remote,_,{atom,_,_ProperMod},{atom,_,_ProperCall}},CallArgs} = hd(ClauseBody),
-  PropFun = lists:nth(2,CallArgs).
+  PropFun = lists:nth(2,CallArgs),
+  {PropFun, RestFuns}.
 
-% parse_input(Input, PropFun) ->
-%   % check if PropFun expects composite
+get_free() ->
+  Free = get(free),
+  put(free, Free + 1),
+  Free.
 
-%   PropFormat = lists:nth(1, CallArgs),
-%   io:format("~p~n", [CallArgs]),
-%   PInput =
-%     case is_composite(PropFormat) of
-%       true ->
-%         convert_input(Input);
-%       false ->
-%         Input
-%     end,
-%   PInput.
+free_named_var(NameRoot) ->
+  erl_syntax:variable("_" ++ NameRoot ++ integer_to_list(get_free())).
 
 is_composite({cons,_,_,_}) -> true;
 is_composite({tuple,_,_})  -> true;
