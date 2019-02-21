@@ -12,7 +12,15 @@ main(FileName, PropName) ->
 
   FunClauses = erl_syntax:fun_expr_clauses(PropFun),
   FstClause = lists:nth(1,FunClauses),
-  Vars = [free_named_var("TmpVar") || _ <- erl_syntax:clause_patterns(FstClause)],
+  Pats = erl_syntax:clause_patterns(FstClause),
+  NPats = case Pats of
+    [{var,_,_}] ->
+      Pats;
+    _ ->
+      fold_patterns(lists:nth(1,Pats))
+  end,
+  % io:format("NPATS: ~p~n", [NPats]),
+  Vars = [free_named_var("TmpVar") || Pat <- NPats ],
   Body = erl_syntax:clause_body(FstClause),
   Var = erl_syntax:variable("PropFun123"),
   Fun = erl_syntax:match_expr(Var, PropFun),
@@ -23,17 +31,36 @@ main(FileName, PropName) ->
     io:format("~p~n", [Block]),
   read_lines(Vars, Block, RestFuns).
 
+fold_patterns({tuple,_,TupleEs}) -> TupleEs;
+fold_patterns({cons, _, H, T}) -> [H|fold_patterns(T)];
+fold_patterns({nil,_}) -> [];
+fold_patterns(Pat) -> Pat.
+
 read_lines(Vars, Call, Rest) ->
   Line = io:get_line(""),
   %% TODO: Replace eof case by "\n" or other cases
   case Line of
     eof -> io:format("finish~n");
     Line ->
-      FLine = "[" ++ string:trim(Line) ++ "].",
+      FLine =
+        case length(Vars) of
+          1 -> string:trim(Line) ++ ".";
+          _ -> "[" ++ string:trim(Line) ++ "]."
+        end,
       {ok, SLine, _} = erl_scan:string(FLine),
       {ok, Inputs} = erl_parse:parse_exprs(SLine),
-      MI = match_inputs(Vars, Inputs),
-      io:format("~p~n", [MI]),
+      NInputs =
+        case Inputs of
+          [{tuple,_,_}] ->
+            fold_patterns(lists:nth(1,Inputs));
+          [{cons,_,_,_}] ->
+            fold_patterns(lists:nth(1,Inputs));
+          _ ->
+            Inputs
+        end,
+      % io:format("INS: ~p~n", [NInputs]),
+      MI = match_inputs(Vars, NInputs),
+      % io:format("~p~n", [MI]),
       M1 = smerl:new(prop_test),
       F = erl_syntax:revert(erl_syntax:function(erl_syntax:atom(foo),
         [erl_syntax:clause(none, [MI, Call])])),
