@@ -7,7 +7,7 @@ main(FileName, PropName) ->
   % PropFun = get_propfun(FileName, PropName),
   % io:format("~p~n", [PropFun]),
   comp_load(AFileName),
-  PropFun = get_propfun(FileName ++ ".erl", PropName),
+  {PropFun, RestFuns} = get_propfun(FileName ++ ".erl", PropName),
   io:format("~p~n", [PropFun]),
 
   FunClauses = erl_syntax:fun_expr_clauses(PropFun),
@@ -21,9 +21,9 @@ main(FileName, PropName) ->
   io:format("~p~n", [Vars]),
   % io:format("~p~n", [Body]),
     io:format("~p~n", [Block]),
-  read_lines(Vars, Block).
+  read_lines(Vars, Block, RestFuns).
 
-read_lines(Vars, Call) ->
+read_lines(Vars, Call, Rest) ->
   Line = io:get_line(""),
   %% TODO: Replace eof case by "\n" or other cases
   case Line of
@@ -40,14 +40,22 @@ read_lines(Vars, Call) ->
       % RForms = erl_syntax:revert(F),
       io:format("~p~n", [F]),
       %% TODO:
-      %%  1 .Add rest of funs so that they are defined
       %%  2. Solve shadowing problems (rename to random vars)
       {ok, M2} = smerl:add_func(M1, F),
-      smerl:compile(M2),
+      M3 = add_rest(M2, Rest),
+      smerl:compile(M3),
+      % Add try-catch block to manage crashes
       Result = prop_test:foo(),
       io:format("~p~n", [Result]),
-      read_lines(Vars, Call)
+      read_lines(Vars, Call, Rest)
   end.
+
+add_rest(M, []) -> M;
+add_rest(M, [F|Fs]) ->
+  io:format("~p~n", [F]),
+  {ok, M1} = smerl:add_func(M, F),
+  add_rest(M1,Fs).
+
 
 match_inputs(Vars, Inputs) ->
   ZipVI = lists:zip(Vars, Inputs),
