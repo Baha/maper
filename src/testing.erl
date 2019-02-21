@@ -8,8 +8,7 @@ main(FileName, PropName) ->
   % io:format("~p~n", [PropFun]),
   comp_load(AFileName),
   {PropFun, RestFuns} = get_propfun(FileName ++ ".erl", PropName),
-  io:format("~p~n", [PropFun]),
-
+  % io:format("~p~n", [PropFun]),
   FunClauses = erl_syntax:fun_expr_clauses(PropFun),
   FstClause = lists:nth(1,FunClauses),
   Pats = erl_syntax:clause_patterns(FstClause),
@@ -26,9 +25,8 @@ main(FileName, PropName) ->
   Fun = erl_syntax:match_expr(Var, PropFun),
   Call = erl_syntax:revert(erl_syntax:application(Var, Vars)),
   Block = erl_syntax:block_expr([Fun,Call]),
-  io:format("~p~n", [Vars]),
-  % io:format("~p~n", [Body]),
-    io:format("~p~n", [Block]),
+  % io:format("~p~n", [Vars]),
+  % io:format("~p~n", [Block]),
   read_lines(Vars, Block, RestFuns).
 
 fold_patterns({tuple,_,TupleEs}) -> TupleEs;
@@ -40,7 +38,8 @@ read_lines(Vars, Call, Rest) ->
   Line = io:get_line(""),
   %% TODO: Replace eof case by "\n" or other cases
   case Line of
-    eof -> io:format("finish~n");
+    eof ->
+      io:format("finish~n");
     Line ->
       FLine =
         case length(Vars) of
@@ -64,10 +63,8 @@ read_lines(Vars, Call, Rest) ->
       M1 = smerl:new(prop_test),
       F = erl_syntax:revert(erl_syntax:function(erl_syntax:atom(foo),
         [erl_syntax:clause(none, [MI, Call])])),
-      % RForms = erl_syntax:revert(F),
-      io:format("~p~n", [F]),
-      %% TODO:
-      %%  2. Solve shadowing problems (rename to random vars)
+      % io:format("~p~n", [F]),
+      % TODO: Add import proper attribute
       {ok, M2} = smerl:add_func(M1, F),
       M3 = add_rest(M2, Rest),
       smerl:compile(M3),
@@ -79,7 +76,6 @@ read_lines(Vars, Call, Rest) ->
 
 add_rest(M, []) -> M;
 add_rest(M, [F|Fs]) ->
-  io:format("~p~n", [F]),
   {ok, M1} = smerl:add_func(M, F),
   add_rest(M1,Fs).
 
@@ -91,7 +87,7 @@ match_inputs(Vars, Inputs) ->
 comp_load(FileName) ->
   % export_all required for non-exported funs
   compile:file(FileName, [export_all]),
-  io:format("~p~n", [code:load_file(FileName)]).
+  code:load_file(FileName).
 
 get_propfun(FileName, PropName) ->
   Forms = forms:read(FileName),
@@ -140,8 +136,3 @@ get_free() ->
 free_named_var(NameRoot) ->
   erl_syntax:variable("_" ++ NameRoot ++ integer_to_list(get_free())).
 
-is_composite({cons,_,_,_}) -> true;
-is_composite({tuple,_,_})  -> true;
-is_composite(_) -> false.
-
-convert_input(X) -> X.
