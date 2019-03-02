@@ -20,13 +20,13 @@ user:file_search_path(maper_src,'src').
 
 :- discontiguous eval/3.
 
-:- dynamic fundef/3.
-:- multifile fundef/3.
+:- dynamic user:fundef/3.
+:- multifile user:fundef/3.
 
 %% run(mod,fun,args,final_env,final_exp)
 %% loads mod and evaluates fun (from mod)
 run_prog(Mod,(Fun,Arity),Args,FExp) :-
-  retractall(fundef(_,_,_)),
+  retractall(user:fundef(_,_,_)),
   atom_concat('../tests/',Mod,File),
   consult(File),
   run(Mod,Fun/Arity,Args,FExp).
@@ -35,7 +35,7 @@ run_prog(Mod,(Fun,Arity),Args,FExp) :-
 %% evaluates fun (from mod) application and
 %% returns the final environment and expression
 run(Mod,Fun/Arity,Args,FExp) :-
-  fundef(lit(atom,Mod),var(Fun,Arity),fun(Pars,_)),
+  user:fundef(lit(atom,Mod),var(Fun,Arity),fun(Pars,_)),
   zip_binds(Pars,Args,Env),
   eval(apply(var(Fun,Arity),Pars),Env,FExp).
 
@@ -105,7 +105,7 @@ eval(case(IExps,Clauses),Env,Exp) :-
 %% (Apply) ---------------------------------------------------------------------
 eval(apply(FName,IExps),Env,Exp) :-
   % TODO: Pass module here
-  fundef(lit(atom,_),FName,fun(Pars,FunBody)),
+  user:fundef(lit(atom,_Module),FName,fun(Pars,FunBody)),
   eval_list(IExps,Env,FExps),
   zip_binds(Pars,FExps,AppBinds),
   eval(FunBody,AppBinds,Exp).
@@ -116,7 +116,7 @@ eval(call(lit(atom,erlang),lit(atom,Name),IExps),Env,Exp) :-
 %
 eval(call(lit(atom,Module),lit(atom,Name),IExps),Env,Exp) :-
   Module \== erlang,
-  ensure_loaded(erlang_module(Module)),
+  user:ensure_loaded(erlang_module(Module)),  
   eval(apply(var(Name,_),IExps),Env, Exp).
 %
 call_cont(Name,IExps,Env,Exp) :-

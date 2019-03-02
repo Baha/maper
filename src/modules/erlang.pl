@@ -156,7 +156,7 @@ bif('<',[L1,L2], lit(atom,true)) :-
 bif('<',[L1,L2], lit(atom,false)) :-
   bif('==',[L1,L2], lit(atom,true)).
 bif('<',[L1,L2], lit(atom,false)) :-
-  bif('>=',[L1,L2], lit(atom,true)).
+  bif('>',[L1,L2], lit(atom,true)).
 %% utility predicates
 % number
 lt(lit(int,X),lit(int,Y)) :- X #< Y.
@@ -223,7 +223,7 @@ bif('>',[L1,L2], lit(atom,true)) :-
 bif('>',[L1,L2], lit(atom,false)) :-
   bif('==',[L1,L2], lit(atom,true)).
 bif('>',[L1,L2], lit(atom,false)) :-
-  bif('=<',[L1,L2], lit(atom,true)).
+  bif('<',[L1,L2], lit(atom,true)).
 % number
 gt(lit(int,X),lit(int,Y)) :- X #> Y.
 gt(lit(int,X),lit(float,Y)) :- { X > Y }.
@@ -261,7 +261,7 @@ gt_tuple([X|_Xs],[Y|_Ys]) :-
 * =:=
 */
 bif('=:=',[L1,L2], lit(atom,true)) :-
-  L1 = L2.
+  when((nonvar(L1),nonvar(L2)), L1 = L2).
 bif('=:=',[L1,L2], lit(atom,false)) :-
   bif('=/=',[L1,L2], lit(atom,true)).
 /** ----------------------------------------------------------------------------
