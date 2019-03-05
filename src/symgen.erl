@@ -157,6 +157,9 @@ pp_propfun({remote,_,Mod,Fun}) ->
   pp_propfun(Mod) ++ "," ++ pp_propfun(Fun);
 pp_propfun({var,_,Var}) ->
   "var('" ++ atom_to_list(Var) ++ "')";
+pp_propfun({tuple,_,TupleEs}) ->
+  PpEs = [pp_propfun(E) || E <- TupleEs],
+  "tuple(" ++ string:join(PpEs, ",") ++ ")";
 pp_propfun(_) -> "_".
 
 pp_propfun({atom,_,Atom}, NArgs) ->
