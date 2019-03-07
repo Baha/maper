@@ -20,3 +20,10 @@ diff_len([_|T1],[_|T2]) :-
 same_len([],[]).
 same_len([_|T1],[_|T2]) :-
   when((nonvar(T1),nonvar(T2)), same_len(T1,T2)).
+
+% MODE: rsel(-X,+L)
+% SEMANTICS: X is a randomly selected member of L.
+rsel(X,L) :- random_select(E,L,R), rsel_(X,[E|R]).
+% rsel utility predicate
+rsel_(X,[X|_]).
+rsel_(X,[_|R]) :- rsel(X,R).

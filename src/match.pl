@@ -1,18 +1,44 @@
-:- module(match, [match/5]).
+:- module(match,
+  [ deterministic_match/5
+  , random_select_match/5
+  ]).
 
 :- use_module(library(clpfd)).
+:- include('utils').
 
-%% match(+IEnv,+Exps,+Cls, -OEnv,-OExp)
+%% deterministic_match(+IEnv,+Exps,+Cls, -OEnv,-OExp)
 % matches a list of expressions Exps against a list of clauses Cls and returns
 % the matching environment OEnv (IEnv with the new bindings from the variables
 % occurring in the matching pattern), and the body of the matching clause OExp
-match(IEnv,Exps,[Cl|Cls], OEnv,OExp) :-
+deterministic_match(IEnv,Exps,[Cl|Cls], OEnv,OExp) :-
   match_clause(IEnv,Exps,Cl, MEnv,MExp,Res),
-  match_cont(Res,MEnv,MExp,Cls, OEnv,OExp).
+  deterministic_match_cont(Res,MEnv,MExp,Cls, OEnv,OExp).
+% deterministic_match utility predicate
+deterministic_match_cont(true,MEnv,MExp,_Cls, MEnv,MExp).
+deterministic_match_cont(false,IEnv,Exps,Cls, MEnv,MExp) :-
+  deterministic_match(IEnv,Exps,Cls, MEnv,MExp).
+
+%% TODO: work in progress
+%% random_select_match(+IEnv,+Exps,+Cls, -OEnv,-OExp)
+% matches a list of expressions Exps against a list of clauses Cls and returns
+% the matching environment OEnv (IEnv with the new bindings from the variables
+% occurring in the matching pattern), and the body of the matching clause OExp
+:- use_module(library(dialect/hprolog),[take/3]).
+random_select_match(IEnv,Exps,Clauses, OEnv,OExp) :-
+  % Let Clauses be the list of clauses C1,...,Cn
+  % 1. randomly select a clause from Clause, say it Cr with r in [1,n]
+  length(Clauses,N), numlist(1,N,L), rsel(R,L),
+  % 2. all clauses up-to i-1 mismatch (match_clause with Res = false)
+  P is R-1, take(P,Clauses,Mismatching),
+  mismatching_clauses(IEnv,Exps,Mismatching, FEnv),
+  % 3. clause i matches (match_clause with Res = true)
+  nth1(R,Clauses,Cl),
+  match_clause(FEnv,Exps,Cl, OEnv,OExp,true).
 %
-match_cont(true,MEnv,MExp,_Cls, MEnv,MExp).
-match_cont(false,IEnv,Exps,Cls, MEnv,MExp) :-
-  match(IEnv,Exps,Cls, MEnv,MExp).
+mismatching_clauses(Env,_Exps,[], Env).
+mismatching_clauses(Env,Exps,[Cl|Cls], FEnv) :-
+  match_clause(Env,Exps,Cl, MEnv,MExp,false),
+  mismatching_clauses(MEnv,MExp,Cls, FEnv).
 
 %% match_clause(+IEnv,+Exps,+Cl, -MEnv,-MExp,-Res)
 % matches a list of expressions Exps against a clause Cl
