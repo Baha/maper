@@ -23,6 +23,15 @@ user:file_search_path(maper_src,'src').
 :- dynamic user:fundef/3.
 :- multifile user:fundef/3.
 
+:- dynamic user:random_select_match/0.
+:- if(user:random_select_match).
+goal_expansion( match(IEnv,Exps,Cls, OEnv,OExp),
+  random_select_match(IEnv,Exps,Cls, OEnv,OExp) ).
+:- else.
+goal_expansion( match(IEnv,Exps,Cls, OEnv,OExp),
+  deterministic_match(IEnv,Exps,Cls, OEnv,OExp) ).
+:- endif.
+
 %% run(mod,fun,args,final_env,final_exp)
 %% loads mod and evaluates fun (from mod)
 run_prog(Mod,(Fun,Arity),Args,FExp) :-
@@ -116,8 +125,9 @@ eval(call(lit(atom,erlang),lit(atom,Name),IExps),Env,Exp) :-
 %
 eval(call(lit(atom,Module),lit(atom,Name),IExps),Env,Exp) :-
   Module \== erlang,
-  user:ensure_loaded(erlang_module(Module)),  
-  eval(apply(var(Name,_),IExps),Env, Exp).
+  user:ensure_loaded(erlang_module(Module)),
+  length(IExps,Arity),
+  eval(apply(var(Name,Arity),IExps),Env, Exp).
 %
 call_cont(Name,IExps,Env,Exp) :-
   erlang:bif_pred(Name/Arity),
