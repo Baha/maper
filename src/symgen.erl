@@ -3,6 +3,9 @@
 
 main(File) ->
   Forms = forms:read(File ++ ".erl"),
+  UDTypes = forms:filter(fun is_type/1, Forms),
+    io:format("UDTYPES:~n~p~n", [UDTypes]),
+  [generate_type(T) || T <- UDTypes],
   PropFuns = forms:filter(fun is_prop_fun/1, Forms),
   [generate_clauses(Fun) || Fun <- PropFuns].
 
@@ -16,6 +19,49 @@ is_prop_fun({function,_,_,0,FunClauses}) ->
     _ -> false
   end;
 is_prop_fun(_) -> false.
+
+is_type({attribute,_,type,_}) -> true;
+is_type({attribute,_, opaque,_}) -> true;
+is_type(_) -> false.
+
+%% Access can be type (public) or opaque (private)
+generate_type({attribute,_,_Access,TypeDef}) ->
+  GenDef = generate_typedef(TypeDef),
+  io:format("~s~n", [GenDef]).
+
+generate_typedef({Name,Def,Args}) ->
+
+  TName = atom_to_list(Name),
+  AName =
+    case length(Args) of
+      0 -> "";
+      _ ->
+        ArgsStr = [pp_type(A) || A <- Args],
+        "(" ++ string:join(ArgsStr, ",") ++ ")"
+    end,
+  FName = TName ++ AName,
+  generate_type_clauses(Def, FName).
+
+generate_type_clauses({type,_,union,Defs},Name) ->
+  ClausesStr = [generate_type_clauses(D,Name) || D <- Defs],
+  string:join(ClausesStr, "\n");
+generate_type_clauses(X, Name) ->
+  Name ++ pp_type(X).
+pp_type({type,_,tuple,TupleEs}) ->
+  EsStr = [pp_type(E) || E <- TupleEs],
+  "tuple(" ++ string:join(EsStr, ",")++ ")";
+pp_type({user_type,_,Name,Args}) ->
+  TName = atom_to_list(Name),
+  AName =
+    case length(Args) of
+      0 -> "";
+      _ ->
+        ArgsStr = [pp_type(A) || A <- Args],
+        "(" ++ string:join(ArgsStr, ",") ++ ")"
+    end,
+  TName ++ AName;
+pp_type({var,_,Var}) -> atom_to_list(Var);
+pp_type({atom,_,Atom}) -> atom_to_list(Atom).
 
 generate_clauses(Fun) ->
   {function,_,_,0,Clauses} = Fun,
