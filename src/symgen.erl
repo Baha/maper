@@ -88,8 +88,11 @@ generate_clauses(Fun) ->
   ZipVT = zip_vars_types(Vars, [Types]),
   HeadStr  = pp_head(GenName, ZipVT),
   TypesStr = pp_vars_types(ZipVT),
-  PropStr = "eval(" ++ pp_propfun(PropFun) ++ "," ++ pp_var_list(ZipVT) ++ "," ++ pp_prop_exp(PropType) ++")",
-  PpStr = HeadStr ++ TypesStr ++ "," ++ PropStr ++ ".",
+  PropStr = "eval(\n    " ++
+    pp_propfun(PropFun) ++ ",\n    " ++
+    pp_var_list(ZipVT)  ++ ",\n    " ++
+    pp_prop_exp(PropType) ++"\n  )",
+  PpStr = HeadStr ++ TypesStr ++ ",\n  " ++ PropStr ++ ".",
   % PpStr = HeadStr ++ TypesStr ++ ".",
   io:format("~s~n~n", [PpStr]).%,
   % io:format("~p~n", [PropFun]).
@@ -113,7 +116,7 @@ zip_vars_types([V|RVars],[T|RTypes]) ->
 pp_head(GenName, VarsTypes) ->
   VarsStr = [pp_var(V) || {V,_} <- VarsTypes],
   JointStr = string:join(VarsStr, ","),
-  HeadStr = "gen_" ++ GenName ++ "((" ++ JointStr ++ ")) :- ",
+  HeadStr = "gen_" ++ GenName ++ "((" ++ JointStr ++ ")) :-\n  ",
   HeadStr.
 
 pp_var(ConsVars = {cons,_,_,_}) ->
@@ -149,7 +152,7 @@ pp_prop_exp(_) -> "lit(atom,Res)".
 
 pp_vars_types(VarsTypes) ->
   TypeofStr = [pp_vt(V,T) || {V,T} <- VarsTypes],
-  string:join(TypeofStr, ",").
+  string:join(TypeofStr, ",\n  ").
 
 pp_vt({var,_,Var}, {call,_,{atom,_,CName},Args}) ->
   VarStr = atom_to_list(Var),
