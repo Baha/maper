@@ -143,20 +143,54 @@ neq_cons_cont(false,Xs,Ys) :-
  * =<
  */
 bif('=<',[L1,L2], lit(atom,true)) :-
-  bif('==',[L1,L2], lit(atom,true)).
-bif('=<',[L1,L2], lit(atom,true)) :-
-  bif('<',[L1,L2], lit(atom,true)).
+  when((nonvar(L1),nonvar(L2)), lte(L1,L2)).
 bif('=<',[L1,L2], lit(atom,false)) :-
   bif('>',[L1,L2], lit(atom,true)).
+%% utility predicates
+% number
+lte(lit(int,X),lit(int,Y)) :- X #=< Y.
+lte(lit(int,X),lit(float,Y)) :- { X =< Y }.
+lte(lit(float,X),lit(int,Y)) :- { X =< Y }.
+lte(lit(float,X),lit(float,Y)) :- { X =< Y }.
+% atom
+lte(lit(atom,X),lit(atom,Y)) :- X @=< Y.
+% tuple : tuples are ordered by size, two tuples with the same size are
+% compared element by element.
+lte(tuple(X),tuple(Y)) :-
+  bif('tuple_size',[tuple(X)], lit(int,S1)),
+  bif('tuple_size',[tuple(Y)], lit(int,S2)),
+  lte_tuple_cont(X,S1,Y,S2).
+% list: lists are compared element by element
+lte(nil,nil).
+lte(cons(X,Xs),cons(Y,Ys)) :-
+  bif('=<',[X,Y], lit(atom,true)),
+  bif('=<',[Xs,Ys], lit(atom,true)).
+% different types (for X and Y of the same type we have the rules above)
+lte(X,Y) :- type_of(X,T1), type_of(Y,T2), lt_by_type(T1,T2).
+%%
+lte_tuple_cont(_T1,S1,_T2,S2) :-
+  S1 #\= S2.
+lte_tuple_cont(T1,S1,T2,S2) :-
+  S1 #= S2,
+  when((nonvar(T1),nonvar(T2)), lte_tuple(T1,T2) ).
+%%
+lte_tuple([],[]).
+lte_tuple([X|_Xs],[Y|_Ys]) :-
+  bif('=<',[X,Y], lit(atom,true)),
+  when( (nonvar(Xs),nonvar(Ys)), lte_tuple(Xs,Ys) ).
+%%
+type_of(lit(int,_),number). type_of(lit(float,_),number).
+type_of(lit(atom,_),atom).
+type_of(tuple(_),tuple).
+type_of(nil,nil).
+type_of(cons(_,_),list).
 /** ----------------------------------------------------------------------------
  *  <
  */
 bif('<',[L1,L2], lit(atom,true)) :-
   when((nonvar(L1),nonvar(L2)), lt(L1,L2)).
 bif('<',[L1,L2], lit(atom,false)) :-
-  bif('==',[L1,L2], lit(atom,true)).
-bif('<',[L1,L2], lit(atom,false)) :-
-  bif('>',[L1,L2], lit(atom,true)).
+  bif('>=',[L1,L2], lit(atom,true)).
 %% utility predicates
 % number
 lt(lit(int,X),lit(int,Y)) :- X #< Y.
@@ -180,23 +214,17 @@ lt(cons(X,Xs),cons(Y,Ys)) :-
 % different types
 lt(X,Y) :- type_of(X,T1), type_of(Y,T2), lt_by_type(T1,T2).
 %%
-lt_tuple_cont(_X,S1,_Y,S2) :-
+lt_tuple_cont(_T1,S1,_T2,S2) :-
   S1 #\= S2.
-lt_tuple_cont(X,S1,Y,S2) :-
+lt_tuple_cont(T1,S1,T2,S2) :-
   S1 #= S2,
-  lt_tuple(X,Y).
+  when((nonvar(T1),nonvar(T2)), lt_tuple(T1,T2) ).
 %%
 lt_tuple([X|_Xs],[Y|_Ys]) :-
   bif('<',[X,Y], lit(atom,true)).
-lt_tuple([X|_Xs],[Y|_Ys]) :-
+lt_tuple([X|Xs],[Y|Ys]) :-
   bif('==',[X,Y], lit(atom,true)),
   when((nonvar(Xs),nonvar(Ys)), lt_tuple(Xs,Ys)).
-%%
-type_of(lit(int,_),number). type_of(lit(float,_),number).
-type_of(lit(atom,_),atom).
-type_of(tuple(_),tuple).
-type_of(nil,nil).
-type_of(cons(_,_),list).
 %%
 :- use_module(library(tabling)). % just a note (unnecessary thanks to when/2)
 :- table lt_by_type/2.
@@ -210,20 +238,49 @@ lt_by_type(X,Z) :- lt_by_type(X,Y), lt_by_type(Y,Z).
  * >=
  */
 bif('>=', [L1,L2], lit(atom,true)) :-
-  bif('>', [L1,L2], lit(atom,true)).
-bif('>=', [L1,L2], lit(atom,true)) :-
-  bif('==', [L1,L2], lit(atom,true)).
+  when((nonvar(L1),nonvar(L2)), gte(L1,L2)).
 bif('>=', [L1,L2], lit(atom,false)) :-
   bif('<', [L1,L2], lit(atom,true)).
+%% utility predicates
+% number
+gte(lit(int,X),lit(int,Y)) :- X #>= Y.
+gte(lit(int,X),lit(float,Y)) :- { X >= Y }.
+gte(lit(float,X),lit(int,Y)) :- { X >= Y }.
+gte(lit(float,X),lit(float,Y)) :- { X >= Y }.
+% atom
+gte(lit(atom,X),lit(atom,Y)) :- X @>= Y.
+% tuple: tuples are ordered by size, two tuples with the same size are
+% compared element by element.
+gte(tuple(X),tuple(Y)) :-
+  bif('tuple_size',[tuple(X)], lit(int,S1)),
+  bif('tuple_size',[tuple(Y)], lit(int,S2)),
+  gte_tuple_cont(X,S1,Y,S2).
+% list: lists are compared element by element
+gte(nil,nil).
+gte(cons(X,Xs),cons(Y,Ys)) :-
+  bif('>=',[X,Y], lit(atom,true)),
+  bif('>=',[Xs,Ys], lit(atom,true)).
+% different types
+gte(X,Y) :- type_of(X,T1), type_of(Y,T2), lt_by_type(T2,T1).
+% gt_tuple
+gte_tuple_cont(_T1,S1,_T2,S2) :-
+  S1 #> S2.
+gte_tuple_cont(T1,S1,T2,S2) :-
+  S1 #= S2,
+  when((nonvar(T1),nonvar(T2)), gte_tuple(T1,T2)).
+%%
+gte_tuple([],[]).
+gte_tuple([X|Xs],[Y|Ys]) :-
+  bif('>=',[X,Y], lit(atom,true)),
+  when((nonvar(Xs),nonvar(Ys)), gte_tuple(Xs,Ys)).
 /** ----------------------------------------------------------------------------
 * >
 */
 bif('>',[L1,L2], lit(atom,true)) :-
   when((nonvar(L1),nonvar(L2)), gt(L1,L2)).
 bif('>',[L1,L2], lit(atom,false)) :-
-  bif('==',[L1,L2], lit(atom,true)).
-bif('>',[L1,L2], lit(atom,false)) :-
-  bif('<',[L1,L2], lit(atom,true)).
+  bif('=<',[L1,L2], lit(atom,true)).
+%% utility predicates
 % number
 gt(lit(int,X),lit(int,Y)) :- X #> Y.
 gt(lit(int,X),lit(float,Y)) :- { X > Y }.
@@ -250,11 +307,11 @@ gt_tuple_cont(_T1,S1,_T2,S2) :-
   S1 #> S2.
 gt_tuple_cont(T1,S1,T2,S2) :-
   S1 #= S2,
-  gt_tuple(T1,T2).
+  when((nonvar(T1),nonvar(T2)), gt_tuple(T1,T2) ).
 %%
 gt_tuple([X|_Xs],[Y|_Ys]) :-
   bif('>',[X,Y], lit(atom,true)).
-gt_tuple([X|_Xs],[Y|_Ys]) :-
+gt_tuple([X|Xs],[Y|Ys]) :-
   bif('==',[X,Y], lit(atom,true)),
   when((nonvar(Xs),nonvar(Ys)), gt_tuple(Xs,Ys)).
 /** ----------------------------------------------------------------------------
@@ -262,6 +319,8 @@ gt_tuple([X|_Xs],[Y|_Ys]) :-
 */
 bif('=:=',[L1,L2], lit(atom,true)) :-
   when((nonvar(L1),nonvar(L2)), L1 = L2).
+%bif('=:=',[L1,L2], lit(atom,true)) :-
+%  L1 = L2.
 bif('=:=',[L1,L2], lit(atom,false)) :-
   bif('=/=',[L1,L2], lit(atom,true)).
 /** ----------------------------------------------------------------------------
@@ -679,9 +738,9 @@ bif('ceil',[Arg], error(badarg)) :-
  *    {one,three}
  */
 bif('delete_element',[lit(int,N),tuple(X)], tuple(Y)) :-
-  when(nonvar(X), ( len(X,S), N #>= 1, N #=< S, del_elem(N,X,Y) ) ).
+  when(nonvar(X), ( length(X,S), N #>= 1, N #=< S, del_elem(N,X,Y) ) ).
 bif('delete_element',[lit(int,N),tuple(X)], error(badarg)) :-
-  N #>= 1, when(nonvar(X), ( len(X,S), N #> S ) ).
+  N #>= 1, when(nonvar(X), ( length(X,S), N #> S ) ).
 bif('delete_element',[lit(int,N),_Arg2], error(badarg)) :-
   N #=< 0.
 bif('delete_element',[lit(int,N),Arg2], error(badarg)) :-
@@ -728,9 +787,9 @@ bif('delete_element',[Arg1,Arg2], error(badarg)) :-
  *  Allowed in guard tests.
  */
 bif('element',[lit(int,N),tuple(X)], Y) :-
-  when(nonvar(X), ( len(X,S), N #>= 1, N #=< S, elem(N,X,Y) ) ).
+  when(nonvar(X), ( length(X,S), N #>= 1, N #=< S, elem(N,X,Y) ) ).
 bif('element',[lit(int,N),tuple(X)], error(badarg)) :-
-  N #>= 1, when(nonvar(X), ( len(X,S), N #> S ) ).
+  N #>= 1, when(nonvar(X), ( length(X,S), N #> S ) ).
 bif('element',[lit(int,N),_Arg2], error(badarg)) :-
   N #=< 0.
 bif('element',[lit(int,N),Arg2], error(badarg)) :-
@@ -940,9 +999,9 @@ bif('hd',[Arg], error(badarg)) :-
  *    {one,new,two,three}
 */
 bif('insert_element',[lit(int,N),tuple(X),E], tuple(Y)) :-
-  when(nonvar(X), ( len(X,S), N #>= 1, N #=< S, ins_elem(N,X,E,Y) ) ).
+  when(nonvar(X), ( length(X,S), N #>= 1, N #=< S, ins_elem(N,X,E,Y) ) ).
 bif('insert_element',[lit(int,N),tuple(X),_E], error(badarg)) :-
-  N #>= 1, when(nonvar(X), ( len(X,S), N #> S ) ).
+  N #>= 1, when(nonvar(X), ( length(X,S), N #> S ) ).
 bif('insert_element',[lit(int,N),_Arg2,_E], error(badarg)) :-
   N #=< 0.
 bif('insert_element',[lit(int,N),Arg2,_E], error(badarg)) :-
@@ -1339,7 +1398,7 @@ bif('trunc',[Arg], error(badarg)) :-
  */
 bif('tuple_size',[tuple(T)], lit(int,S)) :-
   S #>= 0,
-  when(nonvar(T), len(T,S) ).
+  when(nonvar(T), length(T,S) ).
 %
 bif('tuple_size',[Arg], error(badarg)) :-
   when(nonvar(Arg), Arg \= tuple(_) ).
