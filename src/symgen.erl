@@ -95,10 +95,17 @@ generate_clauses(Fun) ->
         % io:format("LET (user-defined type)~n"),
         user_bind
     end,
+  EvalStr =
+    case PropType of
+      forall ->
+        "prop_eval(\n    ";
+      _ ->
+        "eval(\n    "
+    end,
   ZipVT = zip_vars_types(Vars, [Types]),
   HeadStr  = pp_head(GenName, ZipVT),
   TypesStr = pp_vars_types(ZipVT),
-  PropStr = "eval(\n    " ++
+  PropStr = EvalStr ++
     pp_propfun(PropFun) ++ ",\n    " ++
     pp_var_list(ZipVT)  ++ ",\n    " ++
     pp_prop_exp(PropType) ++"\n  )",
