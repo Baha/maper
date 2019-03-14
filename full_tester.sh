@@ -1,6 +1,9 @@
 #!/bin/bash
 
-if [ $# -neq 2 ] 
+# Usage example:
+# ./full_tester.sh tests/biggest_bug.erl prop_biggest
+
+if [ $# -ne 2 ]
 then
   echo "Please, select a file and property."
   exit 1
@@ -8,6 +11,6 @@ fi
 
 DEFAULT_NUM_TESTS=10
 
-./erl2pl.sh $1".erl"
-./pbgen.sh $1.pl $2 $DEFAULT_NUM_TESTS
-./erl_tester.sh $1 $2
+./erl2pl.sh $1
+# ./pbgen.sh ${1%%.erl} "gen_"$2 $DEFAULT_NUM_TESTS | ./erl_tester.sh $1 $2
+cat test.txt | ./erl_tester.sh ${1%%.erl} $2

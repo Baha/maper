@@ -7,4 +7,4 @@ then
 fi
 
 erl -noshell -pa ebin -run erl2fact main $1 -s init stop > ${1%%.erl}.pl
-
+erl -noshell -pa ebin -run symgen main $1 -s init stop >> ${1%%.erl}.pl

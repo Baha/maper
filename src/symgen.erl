@@ -2,7 +2,7 @@
 -export([main/1]).
 
 main(File) ->
-  Forms = forms:read(File ++ ".erl"),
+  Forms = forms:read(File),
   UDTypes = forms:filter(fun is_type/1, Forms),
   % io:format("UDTYPES:~n~p~n", [UDTypes]),
   [generate_type(T) || T <- UDTypes],
