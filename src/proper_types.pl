@@ -1,6 +1,8 @@
 :- use_module(library(clpfd)).
 :- use_module(library(clpr)).
 
+:- dynamic config/1.
+
 % ------------------------------------------------------------------------------
 typeof(X,T) :-
   T =.. [F|As],
@@ -77,10 +79,30 @@ non_empty(_,T) :-
 
 % ------------------------------------------------------------------------------
 % list(Value,Type)
-list(nil,_).
-list(cons(X,Xs),T) :-
+%list(nil,_).
+%list(cons(X,Xs),T) :-
+%  typeof(X,T),
+%  list(Xs,T).
+
+
+listlength_inf(X) :- 
+	(config(listlength_inf(Y)) -> X=Y ; X is 1). 
+listlength_sup(X) :- 
+	(config(listlength_sup(Y)) -> X=Y ; X is 5). 
+
+
+list(L,T) :- 
+	listlength_inf(MinL),
+	listlength_sup(MaxL),
+	random_between(MinL,MaxL,N), 
+	list(L,T,N). 
+
+list(nil,_,0).
+list(cons(X,Xs),T,N) :-
+	N>0,
+	N1 is N-1,
   typeof(X,T),
-  list(Xs,T).
+  list(Xs,T,N1).
 
 
 % ------------------------------------------------------------------------------
