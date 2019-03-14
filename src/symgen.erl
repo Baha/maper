@@ -46,7 +46,7 @@ generate_type_clauses({type,_,union,Defs},Name) ->
   ClausesStr = [generate_type_clauses(D,Name) || D <- Defs],
   string:join(ClausesStr, "\n");
 generate_type_clauses(X, Name) ->
-  "typeof(" ++ Name ++ "," ++ pp_type(X) ++ ").".
+  "typedef(" ++ Name ++ "," ++ pp_type(X) ++ ").".
 pp_type({type,_,tuple,TupleEs}) ->
   EsStr = [pp_type(E) || E <- TupleEs],
   "tuple([" ++ string:join(EsStr, ",")++ "])";
