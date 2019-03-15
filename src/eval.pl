@@ -1,5 +1,6 @@
 :- module(eval,
     [ eval/3
+    , prop_eval/3
     , run_prog/4
     ]).
 
@@ -165,3 +166,8 @@ try_vars_body(Env,MExp,(CVars,CBody),_,Exp) :-
   ClauseExp = [clause(CVars,lit(atom,true),CBody)],
   CaseExp = case([MExp],ClauseExp),
   eval(CaseExp,Env,Exp).
+
+% REVIEW: temporary code
+prop_eval(_ExpIn,_Env,_ExpOut) :-
+  true.
+  %eval(ExpIn,Env,ExpOut).
