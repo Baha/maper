@@ -3,19 +3,42 @@
 
 :- dynamic config/1.
 
+start_size(X) :-
+	(config(start_size(Y)) -> X=Y ; X is 1).
+max_size(X) :-
+	(config(max_size(Y)) -> X=Y ; X is 42).
+
+
+:- multifile typedef/2.
+
+
 % ------------------------------------------------------------------------------
 typeof(X,T) :-
   T =.. [F|As],
+  builtin_type_pred(F),
+  !,
   length(As,L),
-  proper_function_to_prolog_predicate(F,L,P),
-  T1 =.. [P,X|As],
-  T1.
+  proper_type_to_prolog(F,L,P),
+  G =.. [P,X|As],
+  call(G).
 
-proper_function_to_prolog_predicate(integer,0,integer_) :- !.
-proper_function_to_prolog_predicate(float,0,float_) :- !.
-proper_function_to_prolog_predicate(number,0,number_) :- !.
-proper_function_to_prolog_predicate(atom,0,atom_) :- !.
-proper_function_to_prolog_predicate(F,_,F).
+
+typeof(X,T) :-
+  is_userdef_type(T),
+  !,
+  typedef(T,D),
+  typeof(X,D).
+
+
+% typedef(tree(_T),exactly(lit(atom,leaf))).
+% typedef(tree(T),tuple([exactly(lit(atom,node)),T,tree(T),tree(T)])).
+
+
+proper_type_to_prolog(integer,0,integer_) :- !.
+proper_type_to_prolog(float,0,float_) :- !.
+proper_type_to_prolog(number,0,number_) :- !.
+proper_type_to_prolog(atom,0,atom_) :- !.
+proper_type_to_prolog(F,_,F).
 
 % TODO: use goal_expansion?
 
@@ -84,18 +107,14 @@ non_empty(_,T) :-
 %  typeof(X,T),
 %  list(Xs,T).
 
+random_size(N) :-
+	start_size(MinL),
+	max_size(MaxL),
+	random_between(MinL,MaxL,N).
 
-listlength_inf(X) :- 
-	(config(listlength_inf(Y)) -> X=Y ; X is 1). 
-listlength_sup(X) :- 
-	(config(listlength_sup(Y)) -> X=Y ; X is 5). 
-
-
-list(L,T) :- 
-	listlength_inf(MinL),
-	listlength_sup(MaxL),
-	random_between(MinL,MaxL,N), 
-	list(L,T,N). 
+list(L,T) :-
+	random_size(N),
+	list(L,T,N).
 
 list(nil,_,0).
 list(cons(X,Xs),T,N) :-
@@ -139,10 +158,16 @@ tuple([E|Es],[T|Ts]) :-
 
 
 % ------------------------------------------------------------------------------
-%
+
 loose_tuple(X,Type) :-
+	random_size(N),
+	loose_tuple(X,Type,N).
+
+loose_tuple(X,Type,N) :-
+  length(L,N),
   list_same_element(L,Type),
   tuple(X,L).
+
 % loose_tuple/2 utility predicate
 list_same_element([],_).
 list_same_element([T|Xs],T) :-
@@ -152,23 +177,41 @@ list_same_element([T|Xs],T) :-
 % ------------------------------------------------------------------------------
 %
 exactly(X,Term) :-
-  atom(Term),
   X = Term.
 
 % ------------------------------------------------------------------------------
 %
 any(X) :- is_type(T), typeof(X,T).
-% any/1 utility predicates
-is_type(integer(_L,_H)).
-is_type(float(_L,_H)).
-is_type(list(T)) :- is_type(T).
-is_type(fixed_list(L)) :- is_type_list(L).
-is_type(vector(_, T)) :- is_type(T).
-is_type(union(L)) :- is_type_list(L).
-is_type(tuple(L)) :- is_type_list(L).
-is_type(loose_tuple(T)) :- is_type(T).
-is_type(exactly(Term)) :- atom(Term).
-%
+
+
+% utility predicates for any/1 and other predicates
+
+is_type(T) :- is_builtin_type(T).
+is_type(T) :- is_userdef_type(T).
+
+is_builtin_type(integer(_L,_H)).
+is_builtin_type(float(_L,_H)).
+is_builtin_type(list(T)) :- is_type(T).
+is_builtin_type(fixed_list(L)) :- is_type_list(L).
+is_builtin_type(vector(_, T)) :- is_type(T).
+is_builtin_type(union(L)) :- is_type_list(L).
+is_builtin_type(tuple(L)) :- is_type_list(L).
+is_builtin_type(loose_tuple(T)) :- is_type(T).
+is_builtin_type(exactly(Term)) :- atom(Term).
+
+is_userdef_type(T) :- typedef(T,_).
+
+
+builtin_type_pred(P) :-
+	member(P,[integer, float, list, fixed_list, vector, union,
+		tuple, loose_tuple, exactly]).
+builtin_type_pred(P) :- alias_type_pred(P).
+
+
+alias_type_pred(P) :-
+	member(P,[non_neg_integer,pos_integer,neg_integer,
+		range, number, non_neg_float, boolean, byte, char, string, term ]).
+
 is_type_list([]).
 is_type_list([T|Ts]) :-
   is_type(T),
