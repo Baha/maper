@@ -16,7 +16,6 @@ max_size(X) :-
 typeof(X,T) :-
   T =.. [F|As],
   builtin_type_pred(F),
-  !,
   length(As,L),
   proper_type_to_prolog(F,L,P),
   G =.. [P,X|As],
@@ -24,8 +23,6 @@ typeof(X,T) :-
 
 
 typeof(X,T) :-
-  is_userdef_type(T),
-  !,
   typedef(T,D),
   typeof(X,D).
 
@@ -110,6 +107,7 @@ non_empty(_,T) :-
 random_size(N) :-
 	start_size(MinL),
 	max_size(MaxL),
+  repeat,
 	random_between(MinL,MaxL,N).
 
 list(L,T) :-
