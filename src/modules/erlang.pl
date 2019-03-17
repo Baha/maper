@@ -79,7 +79,7 @@ eq(lit(int,X),lit(float,Y)) :- { X =:= Y }.
 eq(lit(float,X),lit(int,Y)) :- { X =:= Y }.
 eq(lit(float,X),lit(float,Y)) :- { X =:= Y }.
 % atom
-eq(lit(atom,X),lit(atom,Y)) :- compare(=,X,Y).
+eq(lit(atom,X),lit(atom,Y)) :- when((nonvar(X),nonvar(Y)), X == Y).
 % tuple
 eq(tuple(X),tuple(Y)) :-
   bif('tuple_size',[tuple(X)], lit(int,S1)),
@@ -318,18 +318,51 @@ gt_tuple([X|Xs],[Y|Ys]) :-
 * =:=
 */
 bif('=:=',[L1,L2], lit(atom,true)) :-
-  when((nonvar(L1),nonvar(L2)), L1 = L2).
-%bif('=:=',[L1,L2], lit(atom,true)) :-
-%  L1 = L2.
+  when((nonvar(L1),nonvar(L2)), exactly_equal_to(L1,L2) ).
 bif('=:=',[L1,L2], lit(atom,false)) :-
   bif('=/=',[L1,L2], lit(atom,true)).
+%% utility predicates
+exactly_equal_to(lit(T1,V1),lit(T2,V2)) :-
+  when((ground(T1),ground(T2)), (
+    T1 = T2, bif('==',[lit(T1,V1),lit(T2,V2)], lit(atom,true)) )
+  ).
+exactly_equal_to(nil,nil).
+exactly_equal_to(cons(H1,T1),cons(H2,T2)) :-
+  bif('=:=',[H1,H2], lit(atom,true)),
+  bif('=:=',[T1,T2], lit(atom,true)).
+exactly_equal_to(tuple([]),tuple([])).
+exactly_equal_to(tuple(E1),tuple(E2)) :-
+  when((nonvar(E1),nonvar(E2)), (
+    E1 = [H1|T1], E2 = [H2|T2], bif('=:=',[H1,H2], lit(atom,true)),
+    when((nonvar(T1),nonvar(T2)), exactly_equal_to(tuple(T1),tuple(T2)) ) )
+  ).
+
 /** ----------------------------------------------------------------------------
  * =/=
  */
 bif('=/=',[L1,L2], lit(atom,true)) :-
-  dif(L1,L2).
+  when((nonvar(L1),nonvar(L2)), exactly_not_equal_to(L1,L2) ).
 bif('=/=',[L1,L2], lit(atom,false)) :-
   bif('=:=',[L1,L2], lit(atom,true)).
+%% utility predicates
+exactly_not_equal_to(lit(T1,V1),lit(T2,V2)) :-
+  when((ground(T1),ground(T2)), (
+    T1 = T2, bif('/=',[lit(T1,V1),lit(T2,V2)], lit(atom,true)) )
+  ).
+exactly_not_equal_to(cons(H1,_T1),cons(H2,_T2)) :-
+  bif('=/=',[H1,H2], lit(atom,true)).
+exactly_not_equal_to(cons(H1,T1),cons(H2,T2)) :-
+  bif('=:=',[H1,H2], lit(atom,true)),
+  bif('=/=',[T1,T2], lit(atom,true)).
+exactly_not_equal_to(tuple(E1),tuple(E2)) :-
+  when((nonvar(E1),nonvar(E2)), (
+    E1 = [H1|_T1], E2 = [H2|_T2], bif('=/=',[H1,H2], lit(atom,true)) )
+  ).
+exactly_not_equal_to(tuple(E1),tuple(E2)) :-
+  when((nonvar(E1),nonvar(E2)), (
+    E1 = [H1|T1], E2 = [H2|T2], bif('=:=',[H1,H2], lit(atom,true)),
+    when((nonvar(T1),nonvar(T2)), exactly_not_equal_to(tuple(T1),tuple(T2)) ) )
+  ).
 
 % 8.12 Arithmetic Expressions --------------------------------------------------
 % http://erlang.org/doc/reference_manual/expressions.html#arithmetic-expressions
@@ -608,7 +641,7 @@ bif('abs',[Arg], error(badarg)) :-
  *    {one,two,three}
  */
 bif('append_element',[tuple(T1),E], tuple(T2)) :-
-  append(T1,[E],T2).
+  when(nonvar(T1), append(T1,[E],T2) ).
 %
 bif('append_element',[Arg1,_Arg2], error(badarg)) :-
   when(nonvar(Arg1), Arg1 \= tuple(_) ).
