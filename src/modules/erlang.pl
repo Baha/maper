@@ -345,6 +345,8 @@ bif('=/=',[L1,L2], lit(atom,true)) :-
 bif('=/=',[L1,L2], lit(atom,false)) :-
   bif('=:=',[L1,L2], lit(atom,true)).
 %% utility predicates
+exactly_not_equal_to(lit(T1,_V1),lit(T2,_V2)) :-
+  dif(T1,T2).
 exactly_not_equal_to(lit(T1,V1),lit(T2,V2)) :-
   when((ground(T1),ground(T2)), (
     T1 = T2, bif('/=',[lit(T1,V1),lit(T2,V2)], lit(atom,true)) )
@@ -363,6 +365,15 @@ exactly_not_equal_to(tuple(E1),tuple(E2)) :-
     E1 = [H1|T1], E2 = [H2|T2], bif('=:=',[H1,H2], lit(atom,true)),
     when((nonvar(T1),nonvar(T2)), exactly_not_equal_to(tuple(T1),tuple(T2)) ) )
   ).
+exactly_not_equal_to(lit(_,_),nil).
+exactly_not_equal_to(lit(_,_),cons(_,_)).
+exactly_not_equal_to(lit(_,_),tuple(_)).
+exactly_not_equal_to(cons(_,_),lit(_,_)).
+exactly_not_equal_to(cons(_,_),tuple(_)).
+exactly_not_equal_to(cons(_,_),nil).
+exactly_not_equal_to(tuple(_),lit(_,_)).
+exactly_not_equal_to(tuple(_),nil).
+exactly_not_equal_to(tuple(_),cons(_,_)).
 
 % 8.12 Arithmetic Expressions --------------------------------------------------
 % http://erlang.org/doc/reference_manual/expressions.html#arithmetic-expressions
