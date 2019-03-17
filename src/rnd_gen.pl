@@ -11,7 +11,9 @@
 :- dynamic config/1.
 
 
+% ------------------------------------------------------------------------------
 % lit(int,X)
+% ------------------------------------------------------------------------------
 
 int_sup(Sup) :- Exp is 12, Sup is 10**Exp.
 int_inf(Inf) :- int_sup(Sup), Inf is -Sup.
@@ -38,12 +40,11 @@ rand_int(X) :-
 
 
 
-
-
-
+% ------------------------------------------------------------------------------
 % lit(float,X)
+% ------------------------------------------------------------------------------
 
-float_sup(Sup) :- Exp is 12, Sup is (10**Exp)+0.000000000001.
+float_sup(Sup) :- int_sup(Sup1), Sup is Sup1 + 0.000000000001.
 float_inf(Inf) :- float_sup(Sup), Inf is -Sup.
 
 float_sup(X,SupX) :-  
@@ -70,18 +71,10 @@ rand_float(X) :-
 		X is Inf+R*Len.
 
 %		random(Inf,Sup,X).
-% SWI doc says 
+% SWIPL doc says 
 % random/3 deprecated 		
 % Please use random/1 for generating a random float ... but 
 % random/1 Binds R to a new random float in the open interval (0.0,1.0). 
-
-
-
-% ------------------------------------------------------------------------------
-% list(Value,Length,Type)  
-% TODO: move to proper_types ?
-% list(Value,Length,Type) :- 	vector(Value,Length,Type)
-
 
 
 
@@ -89,8 +82,8 @@ rand_float(X) :-
 
 generate_test_cases(G) :-
 	retractall(config(_)),
-	assertz(config(listlength_inf(3))),
-	assertz(config(listlength_sup(10))),
+	assertz(config(start_size(1))),
+	assertz(config(max_size(10))),
 	call(G),
 	G =.. [_,Arg],
 	!,
@@ -98,32 +91,58 @@ generate_test_cases(G) :-
 	maplist(rand_elem,ArgL),
 %	maplist(write_elem,ArgL)
 	length(ArgL,N),
-	findall(_,(nth1(I,ArgL,X), write_elem(X), (I<N -> write(',') ; true)),_)
-	.
+	findall(_,(nth1(I,ArgL,X), write_elem(X), (I<N -> write(',') ; true)),_).
 
 
 
 
 %%%% Random element generation
 
+rand_elem(X) :- ground(X), !.
+
+
+rand_elem(lit(int,X)) :- rand_int(X).
+
+rand_elem(lit(float,X)) :- rand_float(X).
+
+%rand_elem(lit(atom,X)) :- ++++
+
+
 rand_elem(nil).
 rand_elem(cons(X,L)) :-  
 	rand_elem(X),
 	rand_elem(L). 
 
-rand_elem(lit(int,X)) :- rand_int(X).
-rand_elem(lit(float,X)) :- rand_float(X).
+rand_elem([]).
+rand_elem([X|L]) :-  
+	rand_elem(X),
+	rand_elem(L).
+
+
 
 %%%% Write element 
 
 write_elem(lit(int,X)) :-  write(X).
+
 write_elem(lit(float,X)) :-  write(X).
+
+write_elem(lit(atom,X)) :-  write(X).
+
 
 write_elem(nil) :- write('[]').
 write_elem(cons(X,L)) :- write('['), write_elem_(cons(X,L)) ,write(']').
 
+write_elem([]) :- write('{}').
+write_elem([X|L]) :- write('{'), write_elem_([X|L]) ,write('}').
+
+
+
+
 write_elem_(cons(X,nil)) :- write_elem(X).
 write_elem_(cons(X,cons(Y,L))) :-  write_elem(X), write(','), write_elem_(cons(Y,L)).
+
+write_elem_([X]) :- write_elem(X).
+write_elem_([X,Y|L]) :-  write_elem(X), write(','), write_elem_([Y|L]).
 
 
 
