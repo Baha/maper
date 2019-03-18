@@ -329,7 +329,7 @@ exactly_equal_to(lit(T1,V1),lit(T2,V2)) :-
 exactly_equal_to(nil,nil).
 exactly_equal_to(cons(H1,T1),cons(H2,T2)) :-
   bif('=:=',[H1,H2], lit(atom,true)),
-  bif('=:=',[T1,T2], lit(atom,true)).
+  when((nonvar(T1),nonvar(T2)), exactly_equal_to(T1,T2) ).
 exactly_equal_to(tuple([]),tuple([])).
 exactly_equal_to(tuple(E1),tuple(E2)) :-
   when((nonvar(E1),nonvar(E2)), (
@@ -355,7 +355,7 @@ exactly_not_equal_to(cons(H1,_T1),cons(H2,_T2)) :-
   bif('=/=',[H1,H2], lit(atom,true)).
 exactly_not_equal_to(cons(H1,T1),cons(H2,T2)) :-
   bif('=:=',[H1,H2], lit(atom,true)),
-  bif('=/=',[T1,T2], lit(atom,true)).
+  when((nonvar(T1),nonvar(T2)), exactly_not_equal_to(T1,T2) ).
 exactly_not_equal_to(tuple(E1),tuple(E2)) :-
   when((nonvar(E1),nonvar(E2)), (
     E1 = [H1|_T1], E2 = [H2|_T2], bif('=/=',[H1,H2], lit(atom,true)) )

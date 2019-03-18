@@ -107,10 +107,48 @@ let_cont(_Env,_Var,EExpr1,_Expr2,EExpr1) :-
   EExpr1 = error(_Reason).
 
 %% (Case) ----------------------------------------------------------------------
+%eval(case(IExps,Clauses),Env,Exp) :-
+%  eval_list(IExps,Env,MExps),
+%  match(Env,MExps,Clauses,NEnv,NExp),
+%  eval(NExp,NEnv,Exp).
 eval(case(IExps,Clauses),Env,Exp) :-
-  eval_list(IExps,Env,MExps),
-  match(Env,MExps,Clauses,NEnv,NExp),
-  eval(NExp,NEnv,Exp).
+  eval_list(IExps,Env,EExps),
+  case_cont(Env,EExps,Clauses, Exp).
+%
+case_cont(Env,Exps,Clauses, Exp) :-
+  ( suspend_on(Env,Exps,Clauses, Cond) ->
+    when(Cond, case_cont(Env,Exps,Clauses,Exp) )
+  ;
+    ( match(Env,Exps,Clauses, MEnv,ClBody), eval(ClBody,MEnv,Exp) )
+  ).
+%
+suspend_on(Env,Exps,Clauses, Cond) :-
+  term_variables(Exps,ExpsVars),
+  copy_term((Env,Exps,ExpsVars),(CpyEnv,CpyExps,CpyExpsVars)),
+  match(CpyEnv,CpyExps,Clauses, _MEnv,_ClBody),
+  filter_bindings(ExpsVars,CpyExpsVars, Vars),
+  vars2cond(Vars,Cond).
+%
+filter_bindings([],[], []).
+filter_bindings([_|As],[T|Bs], Vs) :-
+  var(T),
+  filter_bindings(As,Bs, Vs).
+filter_bindings([_|As],[T|Bs], Vs) :-
+  nonvar(T), T = lit(_,_),
+  filter_bindings(As,Bs, Vs).
+filter_bindings([_|As],[T|Bs], Vs) :-
+  nonvar(T), T = nil,
+  filter_bindings(As,Bs, Vs).
+filter_bindings([V|As],[T|Bs], [V|Vs] ) :-
+  nonvar(T), T = cons(_,_),
+  filter_bindings(As,Bs, Vs).
+filter_bindings([V|As],[T|Bs], [V|Vs] ) :-
+  nonvar(T), T = tuple(_),
+  filter_bindings(As,Bs, Vs).
+%
+vars2cond([V],nonvar(V)).
+vars2cond([V|Vs], ( nonvar(V) ; Cond ) ) :-
+  vars2cond(Vs, Cond ).
 
 %% (Apply) ---------------------------------------------------------------------
 eval(apply(FName,IExps),Env,Exp) :-
