@@ -189,6 +189,7 @@ is_type(T) :- is_userdef_type(T).
 
 is_builtin_type(integer(_L,_H)).
 is_builtin_type(float(_L,_H)).
+% TODO: add clauses for    is_builtin_type(non_empty(T)) 
 is_builtin_type(list(T)) :- is_type(T).
 is_builtin_type(fixed_list(L)) :- is_type_list(L).
 is_builtin_type(vector(_, T)) :- is_type(T).
@@ -202,7 +203,7 @@ is_userdef_type(T) :- typedef(T,_).
 
 builtin_type_pred(P) :-
 	member(P,[integer, float, list, fixed_list, vector, union,
-		tuple, loose_tuple, exactly]).
+		tuple, loose_tuple, exactly, non_empty]).
 builtin_type_pred(P) :- alias_type_pred(P).
 
 
