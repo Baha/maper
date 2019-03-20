@@ -36,10 +36,10 @@ fold_patterns(Pat) -> Pat.
 
 read_lines(Vars, Call, Rest) ->
   Line = io:get_line(""),
-  %% TODO: Replace eof case by "\n" or other cases
   case Line of
     eof ->
-      io:format("finish~n");
+      io:format("~n"),
+      ok;
     Line ->
       FLine =
         case length(Vars) of
@@ -68,9 +68,15 @@ read_lines(Vars, Call, Rest) ->
       {ok, M2} = smerl:add_func(M1, F),
       M3 = add_rest(M2, Rest),
       smerl:compile(M3),
-      % Add try-catch block to manage crashes
-      Result = prop_test:foo(),
-      io:format("~p~n", [Result]),
+      try prop_test:foo() of
+        true ->
+          io:format(".");
+        false ->
+          io:format("x")
+      catch
+        _:_ ->
+          io:format("c~n")
+      end,
       read_lines(Vars, Call, Rest)
   end.
 
