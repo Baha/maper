@@ -7,7 +7,7 @@ main(FileName, PropName) ->
   % PropFun = get_propfun(FileName, PropName),
   % io:format("~p~n", [PropFun]),
   comp_load(AFileName),
-  {PropFun, RestFuns} = get_propfun(FileName ++ ".erl", PropName),
+  {PropFun, _RestFuns} = get_propfun(FileName ++ ".erl", PropName),
   % io:format("~p~n", [PropFun]),
   FunClauses = erl_syntax:fun_expr_clauses(PropFun),
   FstClause = lists:nth(1,FunClauses),
@@ -27,7 +27,7 @@ main(FileName, PropName) ->
   Block = erl_syntax:block_expr([Fun,Call]),
   % io:format("~p~n", [Vars]),
   % io:format("~p~n", [Block]),
-  read_lines(Vars, Block, RestFuns).
+  read_lines(Vars, Block, FileName).
 
 fold_patterns({tuple,_,TupleEs}) -> TupleEs;
 fold_patterns({cons, _, H, T}) -> [H|fold_patterns(T)];
@@ -49,7 +49,7 @@ parse_inputs_2(Vars, Line) ->
   NInputs = [erl_parse:abstract(I) || I <- Inputs],
   match_inputs(Vars, NInputs).
 
-read_lines(Vars, Call, Rest) ->
+read_lines(Vars, Call, FileName) ->
   Line = io:get_line(""),
   case Line of
     eof ->
@@ -63,30 +63,30 @@ read_lines(Vars, Call, Rest) ->
           _ ->
             parse_inputs_2(Vars,Line)
         end,
-      M1 = smerl:new(prop_test),
+      {ok, M1} = smerl:for_module(FileName ++ ".erl"),
+      M2 = smerl:set_module(M1, prop_test),
       F = erl_syntax:revert(erl_syntax:function(erl_syntax:atom(foo),
         [erl_syntax:clause(none, [MI, Call])])),
-      % TODO: Add import proper attribute
-      {ok, M2} = smerl:add_func(M1, F),
-      M3 = add_rest(M2, Rest),
-      % io:format("~p~n", [M3]),
+      % io:format("~p~n", [F]),
+      {ok, M3} = smerl:add_func(M2, F),
       smerl:compile(M3),
-      try prop_test:foo() of
-        true ->
-          io:format(".");
-        false ->
-          io:format("x")
-      catch
-        _:_ ->
-          io:format("c~n")
-      end,
-      read_lines(Vars, Call, Rest)
+      prop_test:foo(),
+      % try prop_test:foo() of
+      %   true ->
+      %     io:format(".");
+      %   false ->
+      %     io:format("x")
+      % catch
+      %   _:_ ->
+      %     io:format("c")
+      % end,
+      read_lines(Vars, Call, FileName)
   end.
 
-add_rest(M, []) -> M;
-add_rest(M, [F|Fs]) ->
-  {ok, M1} = smerl:add_func(M, F),
-  add_rest(M1,Fs).
+% add_rest(M, []) -> M;
+% add_rest(M, [F|Fs]) ->
+%   {ok, M1} = smerl:add_func(M, F),
+%   add_rest(M1,Fs).
 
 match_inputs(Vars, Inputs) ->
   ZipVI = lists:zip(Vars, Inputs),
