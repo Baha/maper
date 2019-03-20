@@ -12,5 +12,4 @@ fi
 DEFAULT_NUM_TESTS=10
 
 ./erl2pl.sh $1
-# ./pbgen.sh ${1%%.erl} "gen_"$2 $DEFAULT_NUM_TESTS | ./erl_tester.sh $1 $2
-cat test.txt | ./erl_tester.sh ${1%%.erl} $2
+./pbgen.sh ${1%%.erl} "gen_"$2 $DEFAULT_NUM_TESTS | ./erl_tester.sh ${1%%.erl} $2
