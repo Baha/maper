@@ -34,6 +34,21 @@ fold_patterns({cons, _, H, T}) -> [H|fold_patterns(T)];
 fold_patterns({nil,_}) -> [];
 fold_patterns(Pat) -> Pat.
 
+
+parse_inputs_1(Vars, Line) ->
+  FLine = string:trim(Line) ++ ".",
+  {ok, SLine, _} = erl_scan:string(FLine),
+  {ok, Inputs} = erl_parse:parse_term(SLine),
+  NInputs = [erl_parse:abstract(Inputs)],
+  match_inputs(Vars, NInputs).
+
+parse_inputs_2(Vars, Line) ->
+  FLine = "[" ++ string:trim(Line) ++ "].",
+  {ok, SLine, _} = erl_scan:string(FLine),
+  {ok, Inputs} = erl_parse:parse_term(SLine),
+  NInputs = [erl_parse:abstract(I) || I <- Inputs],
+  match_inputs(Vars, NInputs).
+
 read_lines(Vars, Call, Rest) ->
   Line = io:get_line(""),
   case Line of
@@ -41,24 +56,12 @@ read_lines(Vars, Call, Rest) ->
       io:format("~n"),
       ok;
     Line ->
-      FLine =
-        case length(Vars) of
-          1 -> string:trim(Line) ++ ".";
-          _ -> "[" ++ string:trim(Line) ++ "]."
-        end,
-      {ok, SLine, _} = erl_scan:string(FLine),
-      {ok, Inputs} = erl_parse:parse_exprs(SLine),
-      io:format("VARS: ~p~n", [Vars]),
-      io:format("INPUTS: ~p~n", [Inputs]),
-      % {value,NInputs,_Bs} = erl_eval:exprs(Inputs, erl_eval:new_bindings()),
-      % io:format("NINPUTS: ~p~n", [NInputs]),
       MI =
         case length(Vars) of
-          1 -> match_inputs(Vars, Inputs);
+          1 -> 
+            parse_inputs_1(Vars, Line);
           _ ->
-            NInputs = fold_patterns(Inputs),
-            io:format("NINPUTS: ~p~n", [NInputs]),
-            match_inputs(Vars, NInputs)
+            parse_inputs_2(Vars,Line)
         end,
       M1 = smerl:new(prop_test),
       F = erl_syntax:revert(erl_syntax:function(erl_syntax:atom(foo),
