@@ -48,25 +48,25 @@ read_lines(Vars, Call, Rest) ->
         end,
       {ok, SLine, _} = erl_scan:string(FLine),
       {ok, Inputs} = erl_parse:parse_exprs(SLine),
-      NInputs =
-        case Inputs of
-          [{tuple,_,_}] ->
-            fold_patterns(lists:nth(1,Inputs));
-          [{cons,_,_,_}] ->
-            fold_patterns(lists:nth(1,Inputs));
+      io:format("VARS: ~p~n", [Vars]),
+      io:format("INPUTS: ~p~n", [Inputs]),
+      % {value,NInputs,_Bs} = erl_eval:exprs(Inputs, erl_eval:new_bindings()),
+      % io:format("NINPUTS: ~p~n", [NInputs]),
+      MI =
+        case length(Vars) of
+          1 -> match_inputs(Vars, Inputs);
           _ ->
-            Inputs
+            NInputs = fold_patterns(Inputs),
+            io:format("NINPUTS: ~p~n", [NInputs]),
+            match_inputs(Vars, NInputs)
         end,
-      % io:format("INS: ~p~n", [NInputs]),
-      MI = match_inputs(Vars, NInputs),
-      % io:format("~p~n", [MI]),
       M1 = smerl:new(prop_test),
       F = erl_syntax:revert(erl_syntax:function(erl_syntax:atom(foo),
         [erl_syntax:clause(none, [MI, Call])])),
-      % io:format("~p~n", [F]),
       % TODO: Add import proper attribute
       {ok, M2} = smerl:add_func(M1, F),
       M3 = add_rest(M2, Rest),
+      % io:format("~p~n", [M3]),
       smerl:compile(M3),
       try prop_test:foo() of
         true ->
@@ -84,7 +84,6 @@ add_rest(M, []) -> M;
 add_rest(M, [F|Fs]) ->
   {ok, M1} = smerl:add_func(M, F),
   add_rest(M1,Fs).
-
 
 match_inputs(Vars, Inputs) ->
   ZipVI = lists:zip(Vars, Inputs),
