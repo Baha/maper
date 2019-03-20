@@ -19,8 +19,8 @@ main(FileName, PropName) ->
       fold_patterns(lists:nth(1,Pats))
   end,
   % io:format("NPATS: ~p~n", [NPats]),
-  Vars = [free_named_var("TmpVar") || Pat <- NPats ],
-  Body = erl_syntax:clause_body(FstClause),
+  Vars = [free_named_var("TmpVar") || _ <- NPats ],
+  % Body = erl_syntax:clause_body(FstClause),
   Var = erl_syntax:variable("PropFun123"),
   Fun = erl_syntax:match_expr(Var, PropFun),
   Call = erl_syntax:revert(erl_syntax:application(Var, Vars)),
