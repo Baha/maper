@@ -19,15 +19,16 @@ main(FileName, PropName) ->
       fold_patterns(lists:nth(1,Pats))
   end,
   % io:format("NPATS: ~p~n", [NPats]),
-  Vars = [free_named_var("TmpVar") || _ <- NPats ],
+  Vars = [free_named_var("TmpVar")],
+  NArgs = length(NPats),
   % Body = erl_syntax:clause_body(FstClause),
   Var = erl_syntax:variable("PropFun123"),
   Fun = erl_syntax:match_expr(Var, PropFun),
-  Call = erl_syntax:revert(erl_syntax:application(Var, Vars)),
-  Block = erl_syntax:block_expr([Fun,Call]),
+  % Call = erl_syntax:revert(erl_syntax:application(Var, Vars)),
+  % Block = erl_syntax:block_expr([Fun,Call]),
   % io:format("~p~n", [Vars]),
   % io:format("~p~n", [Block]),
-  read_lines(Vars, Block, FileName).
+  read_lines(Vars, {Var,Fun}, FileName, NArgs).
 
 fold_patterns({tuple,_,TupleEs}) -> TupleEs;
 fold_patterns({cons, _, H, T}) -> [H|fold_patterns(T)];
@@ -35,38 +36,38 @@ fold_patterns({nil,_}) -> [];
 fold_patterns(Pat) -> Pat.
 
 
-parse_inputs_1(Vars, Line) ->
+parse_inputs_1(Var, Line) ->
   FLine = string:trim(Line) ++ ".",
   {ok, SLine, _} = erl_scan:string(FLine),
   {ok, Inputs} = erl_parse:parse_term(SLine),
   NInputs = [erl_parse:abstract(Inputs)],
-  match_inputs(Vars, NInputs).
+  erl_syntax:application(Var, NInputs).
 
-parse_inputs_2(Vars, Line) ->
+parse_inputs_2(Var, Line) ->
   FLine = "[" ++ string:trim(Line) ++ "].",
   {ok, SLine, _} = erl_scan:string(FLine),
   {ok, Inputs} = erl_parse:parse_term(SLine),
-  NInputs = [erl_parse:abstract(I) || I <- Inputs],
-  match_inputs(Vars, NInputs).
+  NInputs = [erl_parse:abstract(Inputs)],
+  erl_syntax:application(Var, NInputs).
 
-read_lines(Vars, Call, FileName) ->
+read_lines(Vars, {Var,Fun}, FileName, NArgs) ->
   Line = io:get_line(""),
   case Line of
     eof ->
       io:format("~n"),
       ok;
     Line ->
-      MI =
-        case length(Vars) of
+      Call =
+        case NArgs of
           1 -> 
-            parse_inputs_1(Vars, Line);
+            parse_inputs_1(Var,Line);
           _ ->
-            parse_inputs_2(Vars,Line)
+            parse_inputs_2(Var,Line)
         end,
       {ok, M1} = smerl:for_module(FileName ++ ".erl"),
       M2 = smerl:set_module(M1, prop_test),
       F = erl_syntax:revert(erl_syntax:function(erl_syntax:atom(foo),
-        [erl_syntax:clause(none, [MI, Call])])),
+        [erl_syntax:clause(none, [erl_syntax:block_expr([Fun,Call])])])),
       % io:format("~p~n", [F]),
       {ok, M3} = smerl:add_func(M2, F),
       smerl:compile(M3),
@@ -80,7 +81,7 @@ read_lines(Vars, Call, FileName) ->
       %   _:_ ->
       %     io:format("c")
       % end,
-      read_lines(Vars, Call, FileName)
+      read_lines(Vars, {Var,Fun}, FileName, NArgs)
   end.
 
 % add_rest(M, []) -> M;
@@ -89,8 +90,9 @@ read_lines(Vars, Call, FileName) ->
 %   add_rest(M1,Fs).
 
 match_inputs(Vars, Inputs) ->
-  ZipVI = lists:zip(Vars, Inputs),
-  erl_syntax:revert(erl_syntax:block_expr([erl_syntax:match_expr(V,I) || {V,I} <- ZipVI])).
+  % ZipVI = lists:zip(Vars, Inputs),
+  % erl_syntax:revert(erl_syntax:block_expr([erl_syntax:match_expr(V,I) || {V,I} <- ZipVI])).
+  erl_syntax:revert(erl_syntax:block_expr([erl_syntax:match_expr(Vars,Inputs)])).
 
 comp_load(FileName) ->
   % export_all required for non-exported funs
@@ -142,5 +144,5 @@ get_free() ->
   Free.
 
 free_named_var(NameRoot) ->
-  erl_syntax:variable("_" ++ NameRoot ++ integer_to_list(get_free())).
+  erl_syntax:revert(erl_syntax:variable("_" ++ NameRoot ++ integer_to_list(get_free()))).
 
