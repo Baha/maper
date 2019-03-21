@@ -12,15 +12,14 @@ main(FileName, PropName) ->
   FunClauses = erl_syntax:fun_expr_clauses(PropFun),
   FstClause = lists:nth(1,FunClauses),
   Pats = erl_syntax:clause_patterns(FstClause),
-  NPats = case Pats of
-    [{var,_,_}] ->
-      Pats;
-    _ ->
-      fold_patterns(lists:nth(1,Pats))
-  end,
-  % io:format("NPATS: ~p~n", [NPats]),
+  PatStruct =
+    case Pats of
+      [{var,_,_}]    -> single;
+      [{cons,_,_,_}] -> list;
+      [{tuple,_,_}]  -> tuple
+    end,
+  % io:format("PATS: ~p~n", [Pats]),
   Vars = [free_named_var("TmpVar")],
-  NArgs = length(NPats),
   % Body = erl_syntax:clause_body(FstClause),
   Var = erl_syntax:variable("PropFun123"),
   Fun = erl_syntax:match_expr(Var, PropFun),
@@ -28,42 +27,32 @@ main(FileName, PropName) ->
   % Block = erl_syntax:block_expr([Fun,Call]),
   % io:format("~p~n", [Vars]),
   % io:format("~p~n", [Block]),
-  read_lines(Vars, {Var,Fun}, FileName, NArgs).
+  read_lines(Vars, {Var,Fun}, FileName, PatStruct).
 
-fold_patterns({tuple,_,TupleEs}) -> TupleEs;
-fold_patterns({cons, _, H, T}) -> [H|fold_patterns(T)];
-fold_patterns({nil,_}) -> [];
-fold_patterns(Pat) -> Pat.
-
-
-parse_inputs_1(Var, Line) ->
-  FLine = string:trim(Line) ++ ".",
+parse_inputs(Var, FLine) ->
   {ok, SLine, _} = erl_scan:string(FLine),
   {ok, Inputs} = erl_parse:parse_term(SLine),
   NInputs = [erl_parse:abstract(Inputs)],
   erl_syntax:application(Var, NInputs).
 
-parse_inputs_2(Var, Line) ->
-  FLine = "[" ++ string:trim(Line) ++ "].",
-  {ok, SLine, _} = erl_scan:string(FLine),
-  {ok, Inputs} = erl_parse:parse_term(SLine),
-  NInputs = [erl_parse:abstract(Inputs)],
-  erl_syntax:application(Var, NInputs).
-
-read_lines(Vars, {Var,Fun}, FileName, NArgs) ->
+read_lines(Vars, {Var,Fun}, FileName, PatStruct) ->
   Line = io:get_line(""),
   case Line of
     eof ->
       io:format("~n"),
       ok;
     Line ->
-      Call =
-        case NArgs of
-          1 -> 
-            parse_inputs_1(Var,Line);
-          _ ->
-            parse_inputs_2(Var,Line)
+      TLine = string:trim(Line),
+      FLine =
+        case PatStruct of
+          single ->
+            TLine ++ ".";
+          list ->
+            "[" ++ TLine ++ "].";
+          tuple ->
+            "{" ++ TLine ++ "}."
         end,
+      Call = parse_inputs(Var,FLine),
       {ok, M1} = smerl:for_module(FileName ++ ".erl"),
       M2 = smerl:set_module(M1, prop_test),
       F = erl_syntax:revert(erl_syntax:function(erl_syntax:atom(foo),
@@ -71,17 +60,17 @@ read_lines(Vars, {Var,Fun}, FileName, NArgs) ->
       % io:format("~p~n", [F]),
       {ok, M3} = smerl:add_func(M2, F),
       smerl:compile(M3),
-      prop_test:foo(),
-      % try prop_test:foo() of
-      %   true ->
-      %     io:format(".");
-      %   false ->
-      %     io:format("x")
-      % catch
-      %   _:_ ->
-      %     io:format("c")
-      % end,
-      read_lines(Vars, {Var,Fun}, FileName, NArgs)
+      % prop_test:foo(),
+      try prop_test:foo() of
+        true ->
+          io:format(".");
+        false ->
+          io:format("x")
+      catch
+        _:_ ->
+          io:format("c")
+      end,
+      read_lines(Vars, {Var,Fun}, FileName, PatStruct)
   end.
 
 % add_rest(M, []) -> M;
