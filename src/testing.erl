@@ -73,16 +73,6 @@ read_lines(Vars, {Var,Fun}, FileName, PatStruct) ->
       read_lines(Vars, {Var,Fun}, FileName, PatStruct)
   end.
 
-% add_rest(M, []) -> M;
-% add_rest(M, [F|Fs]) ->
-%   {ok, M1} = smerl:add_func(M, F),
-%   add_rest(M1,Fs).
-
-match_inputs(Vars, Inputs) ->
-  % ZipVI = lists:zip(Vars, Inputs),
-  % erl_syntax:revert(erl_syntax:block_expr([erl_syntax:match_expr(V,I) || {V,I} <- ZipVI])).
-  erl_syntax:revert(erl_syntax:block_expr([erl_syntax:match_expr(Vars,Inputs)])).
-
 comp_load(FileName) ->
   % export_all required for non-exported funs
   compile:file(FileName, [export_all]),
