@@ -1,12 +1,12 @@
-:- use_module(library(clpr)).  
-:- use_module(library(clpfd)).	
+:- use_module(library(clpr)).
+:- use_module(library(clpfd)).
 
 :- consult('./proper_types.pl').
 :- consult('./eval.pl').
 
 :- working_directory(CWD, CWD),
    working_directory(CWD, CWD).
- 
+
 
 :- dynamic config/1.
 
@@ -15,25 +15,25 @@
 % lit(int,X)
 % ------------------------------------------------------------------------------
 
-int_sup(Sup) :- Exp is 12, Sup is 10**Exp.
+int_sup(Sup) :- Exp is 2, Sup is 10**Exp.
 int_inf(Inf) :- int_sup(Sup), Inf is -Sup.
 
-int_sup(X,SupX) :- fd_sup(X,S), 
-		(S==sup -> 
-			int_sup(SupX) 
-			; 
+int_sup(X,SupX) :- fd_sup(X,S),
+		(S==sup ->
+			int_sup(SupX)
+			;
 			SupX=S
 		).
 
-int_inf(X,InfX) :- fd_inf(X,I), 
-		(I==inf -> 
-			int_inf(InfX) 
-			; 
+int_inf(X,InfX) :- fd_inf(X,I),
+		(I==inf ->
+			int_inf(InfX)
+			;
 			InfX=I
 		).
 
 
-rand_int(X) :- 
+rand_int(X) :-
 		int_inf(X,Inf),
 		int_sup(X,Sup),
 		random_between(Inf,Sup,X).
@@ -47,51 +47,56 @@ rand_int(X) :-
 float_sup(Sup) :- int_sup(Sup1), Sup is Sup1 + 0.000000000001.
 float_inf(Inf) :- float_sup(Sup), Inf is -Sup.
 
-float_sup(X,SupX) :-  
-		(sup(X,S) -> 
+float_sup(X,SupX) :-
+		(sup(X,S) ->
 			SupX=S
-			; 
-			float_sup(SupX) 			
+			;
+			float_sup(SupX)
 		).
 
-float_inf(X,InfX) :-  
-		(inf(X,I) -> 
-			InfX=I 
-			; 
+float_inf(X,InfX) :-
+		(inf(X,I) ->
+			InfX=I
+			;
 			float_inf(InfX)
 		).
 
 
-rand_float(X) :- 
+rand_float(X) :-
 		float_inf(X,Inf),
 		float_sup(X,Sup),
-		
+
 		Len is Sup-Inf,
 		random(R),
 		X is Inf+R*Len.
 
 %		random(Inf,Sup,X).
-% SWIPL doc says 
-% random/3 deprecated 		
-% Please use random/1 for generating a random float ... but 
-% random/1 Binds R to a new random float in the open interval (0.0,1.0). 
+% SWIPL doc says
+% random/3 deprecated
+% Please use random/1 for generating a random float ... but
+% random/1 Binds R to a new random float in the open interval (0.0,1.0).
 
 
-
-
-
-generate_test_cases(G) :-
+% generate, instantiate and write N instances of G
+generate_test_cases(G,N) :-
 	retractall(config(_)),
 	assertz(config(start_size(1))),
 	assertz(config(max_size(10))),
-	call(G),
-	G =.. [_,Arg],
-	!,
-	conj_to_list(Arg,ArgL),
-	maplist(rand_elem,ArgL),
-%	maplist(write_elem,ArgL)
-	length(ArgL,N),
-	findall(_,(nth1(I,ArgL,X), write_elem(X), (I<N -> write(',') ; true)),_).
+
+  once(
+      findnsols(N, _,
+              (
+                  call(G)  ,
+                	G =.. [_,Arg],
+                	conj_to_list(Arg,ArgL),
+                	maplist(rand_elem,ArgL),
+                	length(ArgL,AL),
+                	findall(_,(nth1(I,ArgL,X), write_elem(X), (I<AL -> write(',') ; true)),_)
+                  , nl
+            )
+        , _ )
+  ).
+
 
 
 
@@ -109,18 +114,18 @@ rand_elem(lit(float,X)) :- rand_float(X).
 
 
 rand_elem(nil).
-rand_elem(cons(X,L)) :-  
+rand_elem(cons(X,L)) :-
 	rand_elem(X),
-	rand_elem(L). 
+	rand_elem(L).
 
 rand_elem([]).
-rand_elem([X|L]) :-  
+rand_elem([X|L]) :-
 	rand_elem(X),
 	rand_elem(L).
 
 
 
-%%%% Write element 
+%%%% Write element
 
 write_elem(lit(int,X)) :-  write(X).
 
@@ -149,17 +154,17 @@ write_elem_([X,Y|L]) :-  write_elem(X), write(','), write_elem_([Y|L]).
 
 
 
-%%%%% Random element generation with explicit type specification 
+%%%%% Random element generation with explicit type specification
 %
 %rand_elem_type(nil,_T).
-%rand_elem_type(cons(X,L),list(T)) :-  
+%rand_elem_type(cons(X,L),list(T)) :-
 %	rand_elem_type(X,T),
-%	rand_elem_type(L,list(T)). 
+%	rand_elem_type(L,list(T)).
 %
 %
 %% rand_elem_type(lit(int,X),integer) :- rand_int(X).
 %
-%rand_elem_type(X,T) :- 
+%rand_elem_type(X,T) :-
 %	functor(T,F,_),
 %	member(F,[integer,float]),
 %	typeof(X,T),
@@ -170,7 +175,7 @@ write_elem_([X,Y|L]) :-  write_elem(X), write(','), write_elem_([Y|L]).
 %rand_elem_type_(lit(float,X),float) :- rand_float(X).
 %
 %
-%%%%% Write element with explicit type specification 
+%%%%% Write element with explicit type specification
 %
 %write_elem_type(lit(_,X),T) :- functor(T,F,_), member(F,[integer,float]), write(X).
 %
@@ -199,24 +204,24 @@ write_elem_([X,Y|L]) :-  write_elem(X), write(','), write_elem_([Y|L]).
 %%%%%%%%%%%%  PLAYGROUND
 %
 %
-%rand_list_int_sort_randset(N,S,L) :- 
-%	S1 is 2*S+1, 
+%rand_list_int_sort_randset(N,S,L) :-
+%	S1 is 2*S+1,
 %	randset(N,S1,L1), % slow when S1 is large
 %	D is S+1,
 %	maplist(subtract_(D),L1,L).
 %
-%subtract_(A,X,X1) :- X1 is X-A.	
+%subtract_(A,X,X1) :- X1 is X-A.
 %
-%rand_list_int(N,S,L) :- 
+%rand_list_int(N,S,L) :-
 %	length(L1,N),
 %	S1 is -S,
 %	maplist(random_between_(S1,S),L1,L).
 %
-%rand_list_int_sort(N,S,L) :- 
+%rand_list_int_sort(N,S,L) :-
 %	rand_list_int(N,S,L2),
 %	sort(L2,L).
 %
-%	
+%
 %random_between_(Inf,Sup,_,R) :- random_between(Inf,Sup,R).
 
 
@@ -232,7 +237,7 @@ run :-
 	CallA =.. [Prop,_],
 	atom_number(NS,N),
 	% gtime().
-	findall(_,(repeat(N), generate_test_cases(CallA),nl),_).
+  generate_test_cases(CallA,N).
 
 
 
@@ -248,21 +253,21 @@ conj_to_list(B,L) :-
   ).
 
 
-% Code borrowed from Richard O'Keefe, The Craft of Prolog
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% repeat a number of times
-repeat(N) :-
-             integer(N), % type check
-             N>0,        % value check 
-             repeat1(N).
-
-repeat1(1) :- !. % the cut will prevent the search for other solutions of repeat1(1)
-                 % this clause does not fit any N superior to 1
-repeat1(_).  % first, we succeed with N
-repeat1(N) :- M is N-1,    % when retried because of the fail from above (go1 below...)
-                           % we call for a new invocation with a new arg (decreased by 1)
-              repeat1(M).    % 
+% % Code borrowed from Richard O'Keefe, The Craft of Prolog
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% % repeat a number of times
+% repeat(N) :-
+%              integer(N), % type check
+%              N>0,        % value check
+%              repeat1(N).
+%
+% repeat1(1) :- !. % the cut will prevent the search for other solutions of repeat1(1)
+%                  % this clause does not fit any N superior to 1
+% repeat1(_).  % first, we succeed with N
+% repeat1(N) :- M is N-1,    % when retried because of the fail from above (go1 below...)
+%                            % we call for a new invocation with a new arg (decreased by 1)
+%               repeat1(M).    %
 
 
 gtime(G) :-
@@ -271,5 +276,3 @@ gtime(G) :-
 	statistics(runtime,[T2,_]),
 	Time is T2-T1,
 	write('Time: '), write(Time), write(' ms'), nl, flush_output.
-
-
