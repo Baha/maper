@@ -1,0 +1,2 @@
+fundef(lit(atom,'weird_fun'),var('weird',1),fun([var('@c0')],case([var('@c0')],[clause([lit(int,0)],lit(atom,'true'),lit(atom,'false')),clause([lit(int,1)],lit(atom,'true'),lit(atom,'true')),clause([var('N')],try(let([var('@c1')],call(lit(atom,'erlang'),lit(atom,'+'),[var('@c0'),lit(int,1)]),call(lit(atom,'erlang'),lit(atom,'>='),[var('@c1'),lit(int,2)])),[var('Try')],var('Try'),[var('T'),var('R')],lit(atom,'false')),lit(int,12)),clause([var('@c3')],lit(atom,'true'),lit(int,10))]))).
+

@@ -1,0 +1,2 @@
+fundef(lit(atom,'enc_tuple'),var('main',1),fun([var('@c0')],case([var('@c0')],[clause([tuple([])],lit(atom,'true'),nil),clause([tuple([lit(atom,'a'),lit(atom,'b'),lit(atom,'c')])],lit(atom,'true'),cons(lit(atom,'a'),cons(lit(atom,'b'),cons(lit(atom,'c'),nil)))),clause([tuple([var('S'),lit(atom,'z'),lit(atom,'f')])],lit(atom,'true'),cons(lit(atom,'z'),cons(lit(atom,'a'),nil))),clause([var('@c1')],lit(atom,'true'),primop(lit(atom,'match_fail'),[tuple([lit(atom,'case_clause'),var('@c1')])]))]))).
+
