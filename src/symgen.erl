@@ -165,7 +165,7 @@ pp_var_list(VarsTypes) ->
 
 pp_prop_exp(user_cons) -> "lit(atom,true)";
 pp_prop_exp(user_bind) -> "lit(atom,true)";
-pp_prop_exp(_) -> "lit(atom,Res)".
+pp_prop_exp(_) -> "lit(atom,_Res)".
 
 pp_vars_types(VarsTypes) ->
   TypeofStr = [pp_vt(V,T) || {V,T} <- VarsTypes],
