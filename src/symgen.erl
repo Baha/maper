@@ -71,7 +71,7 @@ pp_type({type,_,Name,Args}) ->
     end,
   TName ++ AName;
 pp_type({var,_,Var}) -> atom_to_list(Var);
-pp_type({atom,_,Atom}) -> "lit(atom," ++ atom_to_list(Atom) ++ ")".
+pp_type({atom,_,Atom}) -> "exactly(lit(atom," ++ atom_to_list(Atom) ++ "))".
 
 generate_clauses(Fun) ->
   {function,_,_,0,Clauses} = Fun,
