@@ -188,6 +188,48 @@ pp_vt(Vars,{call,_,{atom,_,CName},_Args}) ->
   GenStr = "gen_" ++ CallStr ++ "(" ++ ArgsStr ++ ")",
   GenStr.
 
+% is_predef determines if type is predef or user-defined
+% Non-supported cases will be correctly translated
+is_predef(integer) -> true;
+is_predef(float) -> true;
+is_predef(atom) -> true;
+is_predef(binary) -> true;
+is_predef(bitstring) -> true;
+is_predef(list) -> true;
+is_predef(vector) -> true;
+is_predef(union) -> true;
+is_predef(weighted_union) -> true;
+is_predef(tuple) -> true;
+is_predef(loose_tuple) -> true;
+is_predef(exactly) -> true;
+is_predef(fixed_list) -> true;
+is_predef(function) -> true;
+is_predef(map) -> true;
+is_predef(any) -> true;
+is_predef(shrink_list) -> true;
+is_predef(safe_union) -> true;
+is_predef(safe_weighted_union) -> true;
+is_predef(non_neg_integer) -> true;
+is_predef(pos_integer) -> true;
+is_predef(neg_integer) -> true;
+is_predef(range) -> true;
+is_predef(non_neg_float) -> true;
+is_predef(number) -> true;
+is_predef(boolean) -> true;
+is_predef(byte) -> true;
+is_predef(char) -> true;
+is_predef(string) -> true;
+is_predef(wunion) -> true;
+is_predef(term) -> true;
+is_predef(timeout) -> true;
+is_predef(arity) -> true;
+is_predef(resize) -> true;
+is_predef(non_empty) -> true;
+is_predef(noshrink) -> true;
+is_predef(Name) ->
+  TypeNames = get(typenames),
+  lists:member(Name, TypeNames).
+
 pp_nested([{call,_,{atom,_,CName},Args}]) ->
   CallStr = atom_to_list(CName),
   ArgsStr =
