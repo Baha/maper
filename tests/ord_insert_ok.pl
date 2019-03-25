@@ -12,7 +12,7 @@ gen_ordered_list((List)) :-
 
 gen_prop_ordered_insert((Elem,List)) :-
   typeof(Elem,integer),
-  typeof(List,ordered_list),
+  gen_ordered_list(List),
   prop_eval(
     block([apply(var('is_ordered',1),[apply(var('ord_insert',2),[var('Elem'),var('List')])])]),
     [('Elem',Elem),('List',List)],

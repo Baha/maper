@@ -3,6 +3,7 @@
 
 main(File) ->
   Forms = forms:read(File),
+  put(typenames,[]),
   UDTypes = forms:filter(fun is_type/1, Forms),
   % io:format("UDTYPES:~n~p~n", [UDTypes]),
   [generate_type(T) || T <- UDTypes],
@@ -30,7 +31,13 @@ generate_type({attribute,_,_Access,TypeDef}) ->
   io:format("~s~n~n", [GenDef]).
 
 generate_typedef({Name,Def,Args}) ->
-
+  TypeNames = get(typenames),
+  case lists:member(Name, TypeNames) of
+    true ->
+      ok;
+    false ->
+      put(typenames, [Name|TypeNames])
+  end,
   TName = atom_to_list(Name),
   AName =
     case length(Args) of
@@ -174,13 +181,20 @@ pp_vars_types(VarsTypes) ->
 pp_vt({var,_,Var}, {call,_,{atom,_,CName},Args}) ->
   VarStr = atom_to_list(Var),
   CallStr = atom_to_list(CName),
-  ArgsStr =
-    case length(Args) of
-      0 -> "";
-      _ -> "(" ++ pp_nested(Args) ++ ")"
-    end,
-  FullStr = "typeof(" ++ VarStr ++ "," ++ CallStr ++ ArgsStr ++ ")",
-  FullStr;
+  case is_predef(CName) of
+    true ->
+      ArgsStr =
+        case length(Args) of
+          0 -> "";
+          _ -> "(" ++ pp_nested(Args) ++ ")"
+        end,
+      FullStr = "typeof(" ++ VarStr ++ "," ++ CallStr ++ ArgsStr ++ ")",
+      FullStr;
+    false ->
+      Str = "gen_" ++ CallStr ++ "(" ++ VarStr ++ ")",
+      Str
+  end;
+
 % Args will be empty in this case
 pp_vt(Vars,{call,_,{atom,_,CName},_Args}) ->
   CallStr = atom_to_list(CName),
