@@ -147,12 +147,16 @@ union(X,ListOfTypes) :-
   typeof(X,T).
 
 
+
 % ------------------------------------------------------------------------------
 % tuple(ValuesLst,TypesLst)
-tuple([],[]).
-tuple([E|Es],[T|Ts]) :-
+tuple(tuple(X),T) :- tuple_(X,T).
+
+tuple_([],[]).
+tuple_([E|Es],[T|Ts]) :-
   typeof(E,T),
-  tuple(Es,Ts).
+  tuple_(Es,Ts).
+
 
 
 % ------------------------------------------------------------------------------
