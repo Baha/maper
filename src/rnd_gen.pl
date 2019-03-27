@@ -118,10 +118,12 @@ rand_elem(cons(X,L)) :-
 	rand_elem(X),
 	rand_elem(L).
 
-rand_elem([]).
-rand_elem([X|L]) :-
+rand_elem(tuple(X)) :- rand_elem_tuple(X).
+
+rand_elem_tuple([]).
+rand_elem_tuple([X|L]) :-
 	rand_elem(X),
-	rand_elem(L).
+	rand_elem_tuple(L).
 
 
 
@@ -137,17 +139,18 @@ write_elem(lit(atom,X)) :-  write(X).
 write_elem(nil) :- write('[]').
 write_elem(cons(X,L)) :- write('['), write_elem_(cons(X,L)) ,write(']').
 
-write_elem([]) :- write('{}').
-write_elem([X|L]) :- write('{'), write_elem_([X|L]) ,write('}').
+write_elem(tuple(X)) :- write_elem_tuple(X).
 
+write_elem_tuple([]) :- write('{}').
+write_elem_tuple([X|L]) :- write('{'), write_elem_tuple_([X|L]) ,write('}').
 
 
 
 write_elem_(cons(X,nil)) :- write_elem(X).
 write_elem_(cons(X,cons(Y,L))) :-  write_elem(X), write(','), write_elem_(cons(Y,L)).
 
-write_elem_([X]) :- write_elem(X).
-write_elem_([X,Y|L]) :-  write_elem(X), write(','), write_elem_([Y|L]).
+write_elem_tuple_([X]) :- write_elem(X).
+write_elem_tuple_([X,Y|L]) :-  write_elem(X), write(','), write_elem_tuple_([Y|L]).
 
 
 
