@@ -13,6 +13,7 @@ max_size(X) :-
 
 
 % ------------------------------------------------------------------------------
+% X is of type T
 typeof(X,T) :-
   T =.. [F|As],
   builtin_type_pred(F),
@@ -27,8 +28,72 @@ typeof(X,T) :-
   typeof(X,D).
 
 
-% typedef(tree(_T),exactly(lit(atom,leaf))).
-% typedef(tree(T),tuple([exactly(lit(atom,node)),T,tree(T),tree(T)])).
+
+% ------------------------------------------------------------------------------
+% X is of type T and has size S
+typeof(X,T,S) :-
+
+    T =.. [F|As],
+    builtin_type_pred(F),
+    length(As,L),
+    proper_type_to_prolog(F,L,P),
+    G =.. [P,X|As],
+%trace,
+%    repeat,
+
+    sizeof(X,S),
+%    when(nonvar(X),  sizeof(X,S)),
+    call(G)
+    .
+
+
+typeof(X,T,S) :-
+  typedef(T,D),
+  typeof(X,D,S).
+
+
+% sizeof(X,S) :-   clpq:{S=0}, when(nonvar(X),(
+%               (atomic(X) ; X==lit(_,_))
+%           )).
+%
+% sizeof(X,S) :- clpq:{S>=0}, when(nonvar(X),(
+%                 compound(X),
+%                 clpq:{S=1+S1, S1>=0},
+%                 X \== lit(_,_),
+%                 X =.. [_|Args],
+%                 sizeof_list(Args,S1)
+%             )).
+%
+% sizeof_list([],S) :- clpq:{S=0}.
+% sizeof_list([X|Xs],S) :- clpq:{S=S1+S2, S1>=0, S2>=0},
+%               sizeof(X,S1),
+%               sizeof_list(Xs,S2).
+
+
+sizeof(X,0) :- when(nonvar(X),(
+              (atomic(X) ; X==lit(_,_))
+          )).
+
+sizeof(X,S) :-   when(nonvar(X),(
+                compound(X),
+                X \== lit(_,_),
+                X =.. [_|Args],
+                sizeof_list(Args,S1),
+                when(nonvar(S1);nonvar(S), (S1>=0, S is 1+S1))
+            )).
+
+
+sizeof_list([],0).
+sizeof_list([X|Xs],S) :-
+              sizeof(X,S1),
+              sizeof_list(Xs,S2),
+              when( (nonvar(S1),nonvar(S2)) , %;nonvar(S),
+                    (S1>=0, S2>=0, S is S1+S2))
+              .
+
+
+typedef(tree(_T),exactly(lit(atom,leaf))).
+typedef(tree(T),tuple([exactly(lit(atom,node)),T,tree(T),tree(T)])).
 
 
 proper_type_to_prolog(integer,0,integer_) :- !.
@@ -110,16 +175,28 @@ random_size(N) :-
   repeat,
 	random_between(MinL,MaxL,N).
 
-list(L,T) :-
-	random_size(N),
-	list(L,T,N).
+size(N) :-
+  	start_size(MinL),
+  	max_size(MaxL),
+    MinL #< N, N #< MaxL.
 
-list(nil,_,0).
-list(cons(X,Xs),T,N) :-
+
+list(nil,_).
+list(cons(X,Xs),T) :-
+    typeof(X,T),
+    list(Xs,T).
+
+%%%%
+list_sized(L,T) :-
+  	random_size(N),
+  	list_sized(L,T,N).
+
+list_sized(nil,_,0).
+list_sized(cons(X,Xs),T,N) :-
 	N>0,
 	N1 is N-1,
   typeof(X,T),
-  list(Xs,T,N1).
+  list_sized(Xs,T,N1).
 
 
 % ------------------------------------------------------------------------------
@@ -149,10 +226,12 @@ union(X,ListOfTypes) :-
 
 % ------------------------------------------------------------------------------
 % tuple(ValuesLst,TypesLst)
-tuple([],[]).
-tuple([E|Es],[T|Ts]) :-
+tuple(tuple(X),T) :- tuple_(X,T).
+
+tuple_([],[]).
+tuple_([E|Es],[T|Ts]) :-
   typeof(E,T),
-  tuple(Es,Ts).
+  tuple_(Es,Ts).
 
 
 % ------------------------------------------------------------------------------
@@ -189,7 +268,7 @@ is_type(T) :- is_userdef_type(T).
 
 is_builtin_type(integer(_L,_H)).
 is_builtin_type(float(_L,_H)).
-% TODO: add clauses for    is_builtin_type(non_empty(T)) 
+% TODO: add clauses for    is_builtin_type(non_empty(T))
 is_builtin_type(list(T)) :- is_type(T).
 is_builtin_type(fixed_list(L)) :- is_type_list(L).
 is_builtin_type(vector(_, T)) :- is_type(T).
