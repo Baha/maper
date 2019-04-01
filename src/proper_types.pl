@@ -12,29 +12,56 @@ max_size(X) :-
 :- multifile typedef/2.
 
 
+% % ------------------------------------------------------------------------------
+% % X is of type T
+typeof(X,T) :- typeof(X,T,_S).
+
 % ------------------------------------------------------------------------------
-typeof(X,T) :-
-  T =.. [F|As],
-  builtin_type_pred(F),
-  length(As,L),
-  proper_type_to_prolog(F,L,P),
-  G =.. [P,X|As],
-  call(G).
+% X is of type T and has size S
+typeof(X,T,S) :-
+    T =.. [F|As],
+    builtin_type_pred(F),
+    length(As,L),
+    proper_type_to_prolog(F,L,P),
+		append(As,[S],Args),
+		G =.. [P,X|Args],
+    call(G).
 
 
-typeof(X,T) :-
+typeof(X,T,S) :-
   typedef(T,D),
-  typeof(X,D).
+  typeof(X,D,S).
 
 
-% typedef(tree(_T),exactly(lit(atom,leaf))).
-% typedef(tree(T),tuple([exactly(lit(atom,node)),T,tree(T),tree(T)])).
+
+sizeof(X,S) :- {S=0}, atomic(X), !.
+sizeof(X,S) :- {S=0}, when(nonvar(X), (X=lit(_,_); X=nil) ) , !.
+sizeof(X,S) :- {S1>=0, S =1+S1}, when( nonvar(X) ,(
+                compound(X),
+                X \= lit(_,_),
+                X =.. [_|Args],
+                sizeof_list(Args,S1)
+								)
+               ).
+
+
+sizeof_list([],S) :- {S=0}.
+sizeof_list([X|Xs],S) :-
+							% ({S1=0};{S1>=1}),
+							{ S1>=0, S2>=0, S=S1+S2},
+              sizeof(X,S1),
+              sizeof_list(Xs,S2).
+
+
+%typedef(tree(_T),exactly(lit(atom,leaf))).
+%typedef(tree(T),tuple([exactly(lit(atom,node)),T,tree(T),tree(T)])).
 
 
 proper_type_to_prolog(integer,0,integer_) :- !.
 proper_type_to_prolog(float,0,float_) :- !.
 proper_type_to_prolog(number,0,number_) :- !.
 proper_type_to_prolog(atom,0,atom_) :- !.
+proper_type_to_prolog(list,1,list_) :- !.
 proper_type_to_prolog(F,_,F).
 
 % TODO: use goal_expansion?
@@ -42,6 +69,11 @@ proper_type_to_prolog(F,_,F).
 % ------------------------------------------------------------------------------
 % integer(Value,Low,High)
 integer(lit(int,X),Low,High) :-
+	{S=0},
+	integer(lit(int,X),Low,High,S).
+
+integer(lit(int,X),Low,High,S) :-
+	{S=0},
   ((High==inf) ->
       ((Low==inf) -> X in inf..sup ; X #>= Low)
     ;
@@ -61,6 +93,11 @@ integer(lit(int,X),Low,High) :-
 % ------------------------------------------------------------------------------
 % integer(Float,Low,High)
 float(lit(float,X),Low,High) :-
+	{S=0},
+	float(lit(float,X),Low,High,S).
+
+float(lit(float,X),Low,High,S) :-
+	{S=0},
   ((High==inf) ->
       ((Low==inf) -> clpr:{X=_} ; clpr:{X >= Low})
     ;
@@ -110,21 +147,35 @@ random_size(N) :-
   repeat,
 	random_between(MinL,MaxL,N).
 
-list(L,T) :-
-	random_size(N),
-	list(L,T,N).
+size(N) :-
+  	start_size(MinL),
+  	max_size(MaxL),
+    MinL #< N, N #< MaxL.
 
-list(nil,_,0).
-list(cons(X,Xs),T,N) :-
-	N>0,
-	N1 is N-1,
-  typeof(X,T),
-  list(Xs,T,N1).
+
+% list(nil,_).
+% list(cons(X,Xs),T) :-
+%     typeof(X,T),
+%     list(Xs,T).
+
+%%%%
+% list(L,T) :- {S>=0}, list(L,T,S)
+
+list_sized(L,T) :-
+  	random_size(S),
+  	list(L,T,S).
+
+
+list_(nil,_,S) :- {S=0}.
+list_(cons(X,Xs),T,S) :-
+	{S1>=0, S2>=0, S=1+S1+S2},
+  typeof(X,T,S1),
+  list_(Xs,T,S2).
 
 
 % ------------------------------------------------------------------------------
 % fixed_list(ValuesLst,TypesLst)
-fixed_list(nil,nil).
+fixed_list(nil,nil,S) :- {S=0}.
 fixed_list(cons(X,Xs),cons(T,Ts)) :-
   typeof(X,T),
   fixed_list(Xs,Ts).
@@ -147,28 +198,40 @@ union(X,ListOfTypes) :-
   typeof(X,T).
 
 
-
 % ------------------------------------------------------------------------------
 % tuple(ValuesLst,TypesLst)
-tuple(tuple(X),T) :- tuple_(X,T).
 
-tuple_([],[]).
-tuple_([E|Es],[T|Ts]) :-
-  typeof(E,T),
-  tuple_(Es,Ts).
+% tuple(tuple(X),T) :-
+% 	write('TUPLE/2'), nl,
+% 	sizeof(X,S),
+% 	tuple(tuple(X),T,S).
+
+tuple(tuple(X),T,S) :-
+	lists_same_length(X,T,_L),
+	{S = 1+S1},
+	tuple_(X,T,S1).
+
+tuple_([],[],S) :- {S=0}.
+tuple_([E|Es],[T|Ts],S) :-
+	{S = S1+S2, S1>=0, S2>=0},
+  typeof(E,T,S1),
+  tuple_(Es,Ts,S2).
 
 
+% lists_same_length(X,T) :- length(T,L),	length(X,L).
+lists_same_length([],[],0).
+lists_same_length([_|X],[_|Y],L) :- {L=L1+1}, lists_same_length(X,Y, L1).
 
 % ------------------------------------------------------------------------------
 
 loose_tuple(X,Type) :-
-	random_size(N),
-	loose_tuple(X,Type,N).
+	random_size(S),
+	loose_tuple(X,Type,S).
 
-loose_tuple(X,Type,N) :-
-  length(L,N),
+loose_tuple(X,Type,S) :-
+  length(L,S),
   list_same_element(L,Type),
-  tuple(X,L).
+  tuple(X,L,S).
 
 % loose_tuple/2 utility predicate
 list_same_element([],_).
@@ -178,12 +241,13 @@ list_same_element([T|Xs],T) :-
 
 % ------------------------------------------------------------------------------
 %
-exactly(X,Term) :-
+exactly(X,Term,S) :-
+	sizeof(Term,S),
   X = Term.
 
 % ------------------------------------------------------------------------------
 %
-any(X) :- is_type(T), typeof(X,T).
+any(X,S) :- is_type(T), typeof(X,T,S).
 
 
 % utility predicates for any/1 and other predicates
@@ -191,16 +255,18 @@ any(X) :- is_type(T), typeof(X,T).
 is_type(T) :- is_builtin_type(T).
 is_type(T) :- is_userdef_type(T).
 
-is_builtin_type(integer(_L,_H)).
-is_builtin_type(float(_L,_H)).
-% TODO: add clauses for    is_builtin_type(non_empty(T)) 
-is_builtin_type(list(T)) :- is_type(T).
-is_builtin_type(fixed_list(L)) :- is_type_list(L).
-is_builtin_type(vector(_, T)) :- is_type(T).
-is_builtin_type(union(L)) :- is_type_list(L).
-is_builtin_type(tuple(L)) :- is_type_list(L).
-is_builtin_type(loose_tuple(T)) :- is_type(T).
-is_builtin_type(exactly(Term)) :- atom(Term).
+is_builtin_type(T) :- T =.. [F|_], builtin_type_pred(F).
+
+% is_builtin_type(integer(_L,_H)).
+% is_builtin_type(float(_L,_H)).
+% % TODO: add clauses for    is_builtin_type(non_empty(T))
+% is_builtin_type(list(T)) :- is_type(T).
+% is_builtin_type(fixed_list(L)) :- is_type_list(L).
+% is_builtin_type(vector(_, T)) :- is_type(T).
+% is_builtin_type(union(L)) :- is_type_list(L).
+% is_builtin_type(tuple(L)) :- is_type_list(L).
+% is_builtin_type(loose_tuple(T)) :- is_type(T).
+% is_builtin_type(exactly(Term)) :- atom(Term).
 
 is_userdef_type(T) :- typedef(T,_).
 
@@ -225,19 +291,20 @@ is_type_list([T|Ts]) :-
 % Type aliases
 %%------------------------------------------------------------------------------
 
-integer_(X) :- integer(X,inf, inf).
-non_neg_integer(X) :- integer(X,0, inf).
-pos_integer(X) :- integer(X,1, inf).
-neg_integer(X) :- integer(X,inf, -1).
-range(X,Low, High) :- integer(X,Low, High).
-float_(X) :- float(X,inf,inf).
-non_neg_float(X) :- float(X,0,inf).
-number_(X) :- union(X,[integer_,float_]).
-boolean(X) :- union(X,[exactly('false'),exactly('true')]).
-byte(X) :- integer(X,0, 255).
-% char()  dec:1114111    hex:10ffff
-char(X) :- integer(X,0, 1114111).
-list(X) :- is_type(T), list(X,T).
-tuple(X) :- is_type_list(L), tuple(X,L).
-string(X) :- list(X,char).
-term(X) :- any(X).
+integer_(X,S) :- {S=0}, integer(X,inf, inf,S).
+non_neg_integer(X,S) :- {S=0}, integer(X,0, inf,S).
+pos_integer(X,S) :- {S=0}, integer(X,1, inf,S).
+neg_integer(X,S) :- {S=0}, integer(X,inf, -1,S).
+range(X,Low, High,S) :- {S=0}, integer(X,Low, High,S).
+float_(X,S) :- {S=0}, float(X,inf,inf,S).
+non_neg_float(X,S) :- {S=0}, float(X,0,inf,S).
+number_(X,S) :- {S=0}, union(X,[integer_,float_],S).
+boolean(X,S) :- {S=0}, union(X,[exactly('false'),exactly('true')],S).
+byte(X,S) :- {S=0}, integer(X,0, 255,S).
+%%%% char()  dec:1114111    hex:10ffff
+
+%char(X) :- integer(X,0, 1114111).
+list(X,S) :- is_type(T), list_(X,T,S).
+%tuple(X) :- is_type_list(L), tuple(X,L).
+%string(X) :- list(X,char).
+%term(X) :- any(X).
