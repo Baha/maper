@@ -79,9 +79,9 @@ rand_float(X) :-
 
 % generate, instantiate and write N instances of G
 generate_test_cases(G,N) :-
-	retractall(config(_)),
-	assertz(config(start_size(1))),
-	assertz(config(max_size(10))),
+%	retractall(config(_)),
+%	assertz(config(start_size(1))),
+%	assertz(config(max_size(10))),
 
   once(
       findnsols(N, _,

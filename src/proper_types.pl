@@ -3,10 +3,20 @@
 
 :- dynamic config/1.
 
-%:- assert(config(start_size(2))).
-%:- assert(config(max_size(5))).
 
 %:- assert(config(random_tuple)),
+
+set_config(start_size(X)) :-
+	retractall(config(start_size(_))),
+	assertz(config(start_size(X))).
+
+set_config(max_size(X)) :-
+	retractall(config(max_size(_))),
+	assertz(config(max_size(X))).
+
+set_config(random_tuple) :-
+	retractall(config(random_tuple)),
+	assertz(config(random_tuple)).
 
 
 start_size(X) :-
@@ -22,7 +32,7 @@ max_size(X) :-
 % % ------------------------------------------------------------------------------
 % % X is of type T
 typeof(X,T) :-
-	member(T,[integer,float,atom]),
+	member(T,[integer,float,atom,non_neg_integer,pos_integer,neg_integer,range,non_neg_float,number, boolean, byte]),
 	!,
 	{S=0},
 	typeof_(X,T,S).
