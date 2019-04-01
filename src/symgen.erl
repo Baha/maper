@@ -4,6 +4,9 @@
 main(File) ->
   Forms = forms:read(File),
   put(typenames,[]),
+  Specs = forms:filter(fun is_spec/1, Forms),
+  % io:format("Specs:~n~p~n", [Specs]),
+  [generate_spec(S) || S <- Specs],
   UDTypes = forms:filter(fun is_type/1, Forms),
   % io:format("UDTYPES:~n~p~n", [UDTypes]),
   [generate_type(T) || T <- UDTypes],
