@@ -94,12 +94,8 @@ match_expApat(IEnv,Val,alias(var(Var),Pat), OEnv) :-
 %% mismatch(+Exp,+Pat)
 % the expression Exp and the pattern Pat does not match
 % literal
-mismatch(Exp,lit(_Type,_Val)) :-
-  when(nonvar(Exp),
-    Exp \= lit(_,_)
-).
 mismatch(Exp,lit(Type1,Val)) :-
-  erlang:bif('/=',[Exp,lit(Type1,Val)], lit(atom,true)).
+  erlang:bif('=/=',[Exp,lit(Type1,Val)], lit(atom,true)).
 % tuple
 mismatch(Exp,tuple(_PatElems)) :-
   when(nonvar(Exp),
