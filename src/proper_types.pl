@@ -3,10 +3,17 @@
 
 :- dynamic config/1.
 
+%:- assert(config(start_size(2))).
+%:- assert(config(max_size(5))).
+
+%:- assert(config(random_tuple)),
+
+
 start_size(X) :-
 	(config(start_size(Y)) -> X=Y ; X is 1).
 max_size(X) :-
 	(config(max_size(Y)) -> X=Y ; X is 42).
+
 
 
 :- multifile typedef/2.
@@ -14,11 +21,24 @@ max_size(X) :-
 
 % % ------------------------------------------------------------------------------
 % % X is of type T
-typeof(X,T) :- typeof(X,T,_S).
+typeof(X,T) :-
+	member(T,[integer,float,atom]),
+	!,
+	{S=0},
+	typeof_(X,T,S).
+
+typeof(X,T) :-
+	size(S),
+%	random_size(S),
+	typeof_(X,T,S).
+
 
 % ------------------------------------------------------------------------------
 % X is of type T and has size S
 typeof(X,T,S) :-
+	typeof_(X,T,S).
+
+typeof_(X,T,S) :-
     T =.. [F|As],
     builtin_type_pred(F),
     length(As,L),
@@ -28,9 +48,9 @@ typeof(X,T,S) :-
     call(G).
 
 
-typeof(X,T,S) :-
+typeof_(X,T,S) :-
   typedef(T,D),
-  typeof(X,D,S).
+  typeof_(X,D,S).
 
 
 
@@ -124,15 +144,19 @@ atom_(lit(atom,X)) :-
 
 % ------------------------------------------------------------------------------
 % non_empty(Value,Type)
-non_empty(V,T) :-
-  T = list(_),
-  !,
-  V = cons(_,_),
-  typeof(V,T).
-non_empty(_,T) :-
-  term_to_atom(nonempty(T),Atom),
-  atom_concat('non_empty/2: cannot generate ', Atom,Exception),
-  throw(Exception).
+% non_empty(V,T) :-
+%   T = list(_),
+%   !,
+%   V = cons(_,_),
+%   typeof(V,T).
+% non_empty(_,T) :-
+%   term_to_atom(nonempty(T),Atom),
+%   atom_concat('non_empty/2: cannot generate ', Atom,Exception),
+%   throw(Exception).
+
+non_empty(X,T,S) :-
+	{S>=1},
+	typeof(X,T,S).
 
 % ------------------------------------------------------------------------------
 % list(Value,Type)
@@ -150,7 +174,9 @@ random_size(N) :-
 size(N) :-
   	start_size(MinL),
   	max_size(MaxL),
-    MinL #< N, N #< MaxL.
+    % MinL #=< N, N #=< MaxL
+		{MinL =< N, N =< MaxL}
+		.
 
 
 % list(nil,_).
@@ -214,8 +240,18 @@ tuple(tuple(X),T,S) :-
 tuple_([],[],S) :- {S=0}.
 tuple_([E|Es],[T|Ts],S) :-
 	{S = S1+S2, S1>=0, S2>=0},
-  typeof(E,T,S1),
-  tuple_(Es,Ts,S2).
+	(config(random_tuple)  ->
+					(
+				length([E|Es],L),
+				random_between(1,L,Pos),
+				nth1(Pos,[E|Es],E1,Es1),
+				nth1(Pos,[T|Ts],T1,Ts1)
+					)
+			;
+			(E1=E, T1=T, Es1=Es, Ts1=Ts)
+	),
+  typeof(E1,T1,S1),
+  tuple_(Es1,Ts1,S2).
 
 
 % lists_same_length(X,T) :- length(T,L),	length(X,L).
