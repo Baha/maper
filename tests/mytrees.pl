@@ -28,6 +28,16 @@ fundef(lit(atom,'mytrees'),var('tree',1),fun([var('@c0')],let([var('@c3')],fun([
 
 fundef(lit(atom,'mytrees'),var('tree',2),fun([var('@c1'),var('@c0')],case([var('@c1'),var('@c0')],[clause([lit(int,0),var('@c14')],lit(atom,'true'),lit(atom,'leaf')),clause([var('S'),var('G')],lit(atom,'true'),let([var('@c2')],apply(var('tree',2),[lit(int,0),var('G')]),let([var('@c10')],fun([],let([var('@c6')],call(lit(atom,'erlang'),lit(atom,'div'),[var('S'),lit(int,2)]),let([var('@c7')],apply(var('tree',2),[var('@c6'),var('G')]),let([var('@c8')],call(lit(atom,'erlang'),lit(atom,'div'),[var('S'),lit(int,2)]),let([var('@c9')],apply(var('tree',2),[var('@c8'),var('G')]),let([var('@c5')],fun([var('@c3')],case([var('@c3')],[clause([cons(var('L'),cons(var('R'),nil))],lit(atom,'true'),tuple([lit(atom,'node'),var('G'),var('L'),var('R')])),clause([var('@c4')],lit(atom,'true'),primop(lit(atom,'match_fail'),[tuple([lit(atom,'function_clause'),var('@c4')])]))])),call(lit(atom,'proper_types'),lit(atom,'bind'),[cons(var('@c7'),cons(var('@c9'),nil)),var('@c5'),lit(atom,'true')]))))))),let([var('@c11')],call(lit(atom,'proper_types'),lit(atom,'lazy'),[var('@c10')]),call(lit(atom,'proper_types'),lit(atom,'frequency'),[cons(tuple([lit(int,1),var('@c2')]),cons(tuple([lit(int,9),var('@c11')]),nil))])))))]))).
 
+spec(member(T,tree(T)),boolean).
+
+spec(join(tree(T),tree(T)),tree(T)).
+
+spec(delete(T,tree(T)),tree(T)).
+
+spec(tree_sum(tree(number)),number).
+
+spec(preorder(tree(T)),list(T)).
+
 typedef(tree(T),exactly(lit(atom,leaf))).
 typedef(tree(T),tuple([exactly(lit(atom,node)),T,tree(T),tree(T)])).
 
