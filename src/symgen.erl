@@ -28,6 +28,30 @@ is_type({attribute,_,type,_}) -> true;
 is_type({attribute,_, opaque,_}) -> true;
 is_type(_) -> false.
 
+is_spec({attribute,_,spec,_}) -> true;
+is_spec(_) -> false.
+
+generate_spec({attribute,_,spec,SpecT}) ->
+  GenSpec = gen_spec_tuple(SpecT),
+  io:format("~s~n~n", [GenSpec]).
+
+gen_spec_tuple({FunName,FunIO}) ->
+  gen_spec_data(FunName,FunIO).
+
+gen_spec_data(FunName,FunIO) ->
+  SpecName = gen_spec_name(FunName),
+  SpecFun  = gen_spec_fun(SpecName, lists:nth(1,FunIO)),
+  "spec(" ++ SpecFun ++ ").".
+
+gen_spec_name({Name,_Arity}) ->
+  atom_to_list(Name).
+
+gen_spec_fun(Name, {type,_,'fun',[SpecProdInput,SpecOutput]}) ->
+  {type,_,product,SpecInput} = SpecProdInput,
+  GenSpecInput = [pp_type(T) || T <- SpecInput],
+  StrSpecInput = string:join(GenSpecInput, ","),
+  StrSpecOutput = pp_type(SpecOutput),
+  Name ++ "(" ++ StrSpecInput ++ ")," ++ StrSpecOutput.
 %% Access can be type (public) or opaque (private)
 generate_type({attribute,_,_Access,TypeDef}) ->
   GenDef = generate_typedef(TypeDef),
