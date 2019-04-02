@@ -487,7 +487,7 @@ bif('not',[Arg], error(badarg)) :-
 /** ----------------------------------------------------------------------------
  * and
  */
-bif('and',[lit(atom,B1),lit(atom,B2)], B1andB2) :-
+bif('and',[lit(atom,B1),lit(atom,B2)], lit(atom,B1andB2)) :-
   when((nonvar(B1),nonvar(B2)), and(B1,B2,B1andB2) ).
 %
 and(true ,true , true ).
@@ -513,7 +513,7 @@ bif('and',[Arg1,Arg2], error(badarg)) :-
 /** ----------------------------------------------------------------------------
  * or
  */
-bif('or',[lit(atom,B1), lit(atom,B2)], B1orB2) :-
+bif('or',[lit(atom,B1), lit(atom,B2)], lit(atom,B1orB2)) :-
   when((nonvar(B1),nonvar(B2)), or(B1,B2,B1orB2) ).
 %
 or(true ,true , true ).
@@ -526,7 +526,7 @@ bif('or',[Arg1,Arg2], error(badarg)) :-
 /** ----------------------------------------------------------------------------
  * xor
  */
-bif('xor',[lit(atom,B1), lit(atom,B2)], B1xorB2) :-
+bif('xor',[lit(atom,B1), lit(atom,B2)], lit(atom,B1xorB2)) :-
   when((nonvar(B1),nonvar(B2)), xor(B1,B2,B1xorB2) ).
 %
 xor(true ,true , false).
