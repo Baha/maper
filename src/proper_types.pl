@@ -63,16 +63,15 @@ typeof_(X,T,S) :-
   typeof_(X,D,S).
 
 
-
-sizeof(X,S) :- {S=0}, atomic(X), !.
-sizeof(X,S) :- {S=0}, when(nonvar(X), (X=lit(_,_); X=nil) ) , !.
-sizeof(X,S) :- {S1>=0, S =1+S1}, when( nonvar(X) ,(
-                compound(X),
-                X \= lit(_,_),
-                X =.. [_|Args],
-                sizeof_list(Args,S1)
-								)
-               ).
+%
+sizeof(X,S) :-
+  {S=0},
+  when(nonvar(X), ( X = lit(_,_) ; atomic(X) ) ).
+sizeof(X,S) :-
+  {S1>=0, S=1+S1},
+  when(nonvar(X), (
+    compound(X), X \= lit(_,_), X =.. [_|Args], sizeof_list(Args,S1) )
+  ).
 
 
 sizeof_list([],S) :- {S=0}.
