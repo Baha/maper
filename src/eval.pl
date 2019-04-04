@@ -107,19 +107,18 @@ let_cont(_Env,_Var,EExpr1,_Expr2,EExpr1) :-
   EExpr1 = error(_Reason).
 
 %% (Case) ----------------------------------------------------------------------
-%eval(case(IExps,Clauses),Env,Exp) :-
-%  eval_list(IExps,Env,MExps),
-%  match(Env,MExps,Clauses,NEnv,NExp),
-%  eval(NExp,NEnv,Exp).
 eval(case(IExps,Clauses),Env,Exp) :-
   eval_list(IExps,Env,EExps),
+%  match(Env,EExps,Clauses,NEnv,NExp),
+%  eval(NExp,NEnv,Exp).
   case_cont(Env,EExps,Clauses, Exp).
 %
 case_cont(Env,Exps,Clauses, Exp) :-
   ( suspend_on(Env,Exps,Clauses, Cond) ->
     when(Cond, case_cont(Env,Exps,Clauses,Exp) )
   ;
-    ( match(Env,Exps,Clauses, MEnv,ClBody), eval(ClBody,MEnv,Exp) )
+    ( %write('*Let\'s move on: '), write(Exps), nl,
+      match(Env,Exps,Clauses, MEnv,ClBody), eval(ClBody,MEnv,Exp) )
   ).
 %
 suspend_on(Env,Exps,Clauses, Cond) :-
@@ -127,7 +126,8 @@ suspend_on(Env,Exps,Clauses, Cond) :-
   copy_term((Env,Exps,ExpsVars),(CpyEnv,CpyExps,CpyExpsVars)),
   match(CpyEnv,CpyExps,Clauses, _MEnv,_ClBody),
   filter_bindings(ExpsVars,CpyExpsVars, Vars),
-  vars2cond(Vars,Cond).
+  vars2cond(Vars,Cond),
+  true.%write('Awaiting for some input... '), write(Exps), nl.
 %
 filter_bindings([],[], []).
 filter_bindings([_|As],[T|Bs], Vs) :-
@@ -156,7 +156,19 @@ eval(apply(FName,IExps),Env,Exp) :-
   user:fundef(lit(atom,_Module),FName,fun(Pars,FunBody)),
   eval_list(IExps,Env,FExps),
   zip_binds(Pars,FExps,AppBinds),
+  spec_on_output(FName,Exp),
   eval(FunBody,AppBinds,Exp).
+% eval utility predicate to add some constraints on the output expression
+spec_on_output(Fun,Exp) :-
+  Fun = var(FName,Arity),
+  functor(Function,FName,Arity),
+  spec(Function,OutSpec),
+  ( memberchk(OutSpec,[non_neg_integer,pos_integer,neg_integer]) ->
+    typeof(Exp,OutSpec)
+  ;
+    true
+  ).
+%
 
 %% (Call) ----------------------------------------------------------------------
 eval(call(lit(atom,erlang),lit(atom,Name),IExps),Env,Exp) :-
