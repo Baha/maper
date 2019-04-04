@@ -20,7 +20,7 @@ set_config(random_tuple) :-
 
 
 start_size(X) :-
-	(config(start_size(Y)) -> X=Y ; X is 1).
+	(config(start_size(Y)) -> X=Y ; X is 0). % was X is 1
 max_size(X) :-
 	(config(max_size(Y)) -> X=Y ; X is 42).
 
@@ -91,6 +91,7 @@ proper_type_to_prolog(float,0,float_) :- !.
 proper_type_to_prolog(number,0,number_) :- !.
 proper_type_to_prolog(atom,0,atom_) :- !.
 proper_type_to_prolog(list,1,list_) :- !.
+proper_type_to_prolog(union,1,union_) :- !.
 proper_type_to_prolog(F,_,F).
 
 % TODO: use goal_expansion?
@@ -227,8 +228,9 @@ llength(cons(_,Xs),L) :- clpq:{L1>=0, L=1+L1}, llength(Xs,L1).
 
 
 % ------------------------------------------------------------------------------
-% union(Values,TypesLst)
-union(X,ListOfTypes) :-
+% union_(Values,TypesLst,Size)
+% Proper ignores size of union
+union_(X,ListOfTypes,_) :-
   member(T,ListOfTypes),  % use nondet random member selection based on random_member/2 ?
   typeof(X,T).
 
@@ -343,8 +345,8 @@ neg_integer(X,S) :- {S=0}, integer(X,inf, -1,S).
 range(X,Low, High,S) :- {S=0}, integer(X,Low, High,S).
 float_(X,S) :- {S=0}, float(X,inf,inf,S).
 non_neg_float(X,S) :- {S=0}, float(X,0,inf,S).
-number_(X,S) :- {S=0}, union(X,[integer_,float_],S).
-boolean(X,S) :- {S=0}, union(X,[exactly('false'),exactly('true')],S).
+number_(X,S) :- {S=0}, union_(X,[integer_,float_],S).
+boolean(X,S) :- {S=0}, union_(X,[exactly('false'),exactly('true')],S).
 byte(X,S) :- {S=0}, integer(X,0, 255,S).
 %%%% char()  dec:1114111    hex:10ffff
 
