@@ -4,19 +4,51 @@
 :- dynamic config/1.
 
 
-%:- assert(config(random_tuple)),
 
-set_config(start_size(X)) :-
-	retractall(config(start_size(_))),
-	assertz(config(start_size(X))).
+unset_config(X) :-
+	 	X =.. [F|As],
+		length(As,N),
+		length(DontCare,N),
+		X1 =.. [F|DontCare],
+		retractall(config(X1)).
 
-set_config(max_size(X)) :-
-	retractall(config(max_size(_))),
-	assertz(config(max_size(X))).
+% :- set_config(random_tuple).
 
-set_config(random_tuple) :-
-	retractall(config(random_tuple)),
-	assertz(config(random_tuple)).
+set_config(C) :-
+	unset_config(C),
+	assertz(config(C)).
+
+show_config :-
+	findall(X, (config(X),write(X),nl), _).
+
+% admissible values for C
+% start_size(X)
+% max_size(X)
+% random_size(any)
+% random_size(all)
+% random_tuple
+% random_union
+
+
+% set_config(start_size(X)) :-
+% 	retractall(config(start_size(_))),
+% 	assertz(config(start_size(X))).
+%
+% set_config(max_size(X)) :-
+% 	retractall(config(max_size(_))),
+% 	assertz(config(max_size(X))).
+%
+% set_config(random_size) :-
+% 	retractall(config(random_size)),
+% 	assertz(config(random_size)).
+%
+% set_config(random_tuple) :-
+% 	retractall(config(random_tuple)),
+% 	assertz(config(random_tuple)).
+%
+% set_config(random_union) :-
+% 	retractall(config(random_union)),
+% 	assertz(config(random_union)).
 
 
 start_size(X) :-
@@ -38,8 +70,25 @@ typeof(X,T) :-
 	typeof_(X,T,S).
 
 typeof(X,T) :-
+	config(random_size(any)),
+	!,
 	size(S),
-%	random_size(S),
+	max_size(MaxS),
+	repeat(MaxS), % repeat MaxS times
+	random_size(S),
+	typeof_(X,T,S).
+
+typeof(X,T) :-
+	config(random_size(all)),
+	!,
+	start_size(S1),
+	max_size(S2),
+	S in S1..S2,
+	label(S),
+	typeof_(X,T,S).
+
+typeof(X,T) :-
+	size(S),
 	typeof_(X,T,S).
 
 
@@ -178,7 +227,6 @@ non_empty(X,T,S) :-
 random_size(N) :-
 	start_size(MinL),
 	max_size(MaxL),
-  repeat,
 	random_between(MinL,MaxL,N).
 
 size(N) :-
@@ -231,7 +279,12 @@ llength(cons(_,Xs),L) :- clpq:{L1>=0, L=1+L1}, llength(Xs,L1).
 % union_(Values,TypesLst,Size)
 % Proper ignores size of union
 union_(X,ListOfTypes,_) :-
-  member(T,ListOfTypes),  % use nondet random member selection based on random_member/2 ?
+	(config(random_union)  ->
+		% use nondet random member selection based on random_member/2
+			random_member(T,ListOfTypes)
+		;
+  		member(T,ListOfTypes)
+	),
   typeof(X,T).
 
 

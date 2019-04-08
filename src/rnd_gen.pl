@@ -104,14 +104,9 @@ generate_test_cases(G,N) :-
 %%%% Random element generation
 
 rand_elem(X) :- ground(X), !.
-
-
 rand_elem(lit(int,X)) :- rand_int(X).
-
 rand_elem(lit(float,X)) :- rand_float(X).
-
-%rand_elem(lit(atom,X)) :- ++++
-
+%rand_elem(lit(atom,X)) :-  TODO ++++
 
 rand_elem(nil).
 rand_elem(cons(X,L)) :-
@@ -126,20 +121,17 @@ rand_elem_tuple([X|L]) :-
 	rand_elem_tuple(L).
 
 
-
 %%%% Write element
 
-write_elem(lit(int,X)) :-  write(X).
+write_elem(lit(int,X)) :-  !, write(X).
+write_elem(lit(float,X)) :- !,  write(X).
+write_elem(lit(atom,X)) :- !,  write(X).
 
-write_elem(lit(float,X)) :-  write(X).
+write_elem(nil) :- !, write('[]').
+write_elem(cons(X,L)) :- !, write('['), write_elem_(cons(X,L)) ,write(']').
 
-write_elem(lit(atom,X)) :-  write(X).
-
-
-write_elem(nil) :- write('[]').
-write_elem(cons(X,L)) :- write('['), write_elem_(cons(X,L)) ,write(']').
-
-write_elem(tuple(X)) :- write_elem_tuple(X).
+write_elem(tuple(X)) :- !, write_elem_tuple(X).
+write_elem(X) :- ground(X), write(X).
 
 write_elem_tuple([]) :- write('{}').
 write_elem_tuple([X|L]) :- write('{'), write_elem_tuple_([X|L]) ,write('}').
@@ -155,55 +147,6 @@ write_elem_tuple_([X,Y|L]) :-  write_elem(X), write(','), write_elem_tuple_([Y|L
 
 
 
-
-
-%%%%% Random element generation with explicit type specification
-%
-%rand_elem_type(nil,_T).
-%rand_elem_type(cons(X,L),list(T)) :-
-%	rand_elem_type(X,T),
-%	rand_elem_type(L,list(T)).
-%
-%
-%% rand_elem_type(lit(int,X),integer) :- rand_int(X).
-%
-%rand_elem_type(X,T) :-
-%	functor(T,F,_),
-%	member(F,[integer,float]),
-%	typeof(X,T),
-%	rand_elem_type_(X,F)
-%	.
-%
-%rand_elem_type_(lit(int,X),integer) :- rand_int(X).
-%rand_elem_type_(lit(float,X),float) :- rand_float(X).
-%
-%
-%%%%% Write element with explicit type specification
-%
-%write_elem_type(lit(_,X),T) :- functor(T,F,_), member(F,[integer,float]), write(X).
-%
-%write_elem_type(nil,_) :- write('[]').
-%write_elem_type(cons(X,L),T) :- write('['), write_elem_type_(cons(X,L),T) ,write(']').
-%
-%write_elem_type_(cons(X,nil),list(T)) :- write_elem_type(X,T).
-%write_elem_type_(cons(X,cons(Y,L)),list(T)) :-  write_elem_type(X,T), write(','), write_elem_type_(cons(Y,L),list(T)).
-%
-%
-%
-%% TESTS
-%% rand_elem_type(X,list(integer)).
-%% rand_elem_type(X,list(integer(10,200))).
-%% rand_elem_type(X,list(list(integer(10,200)))).
-%%
-%% rand_elem_type(X,list(float)).
-%% rand_elem_type(X,list(float(10,200))).
-%% rand_elem_type(X,list(list(float(10,200)))).
-%
-%
-%% T=list(list(float)), rand_elem_type(X,T), write_elem_type(X,T).
-%
-%
-%
 %%%%%%%%%%%%  PLAYGROUND
 %
 %
@@ -260,17 +203,17 @@ conj_to_list(B,L) :-
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % % repeat a number of times
-% repeat(N) :-
-%              integer(N), % type check
-%              N>0,        % value check
-%              repeat1(N).
-%
-% repeat1(1) :- !. % the cut will prevent the search for other solutions of repeat1(1)
-%                  % this clause does not fit any N superior to 1
-% repeat1(_).  % first, we succeed with N
-% repeat1(N) :- M is N-1,    % when retried because of the fail from above (go1 below...)
-%                            % we call for a new invocation with a new arg (decreased by 1)
-%               repeat1(M).    %
+repeat(N) :-
+             integer(N), % type check
+             N>0,        % value check
+             repeat1(N).
+
+repeat1(1) :- !. % the cut will prevent the search for other solutions of repeat1(1)
+                 % this clause does not fit any N superior to 1
+repeat1(_).  % first, we succeed with N
+repeat1(N) :- M is N-1,    % when retried because of the fail from above (go1 below...)
+                           % we call for a new invocation with a new arg (decreased by 1)
+              repeat1(M).    %
 
 
 gtime(G) :-
