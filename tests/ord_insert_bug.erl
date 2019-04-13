@@ -1,4 +1,4 @@
--module(ord_insert_ok).
+-module(ord_insert_bug).
 -export([ord_insert/2,is_ordered/1]).
 
 -include_lib("proper/include/proper.hrl").
@@ -11,7 +11,7 @@ is_ordered(_) -> % smaller lists
 ord_insert(I,[]) ->
   [I];
 ord_insert(I,[X|Xs]) when I =< X ->
-  [I,X|Xs];
+  [X,I|Xs]; % it should be [I,X|Xs]
 ord_insert(I,[X|Xs]) ->
   [X] ++ ord_insert(I,Xs).
 
@@ -26,13 +26,13 @@ prop_ordered_insert() ->
   ).
 
 % Eshell V9.2  (abort with ^G)
-% 1> c('tests/ord_insert_ok.erl').
-% {ok,ord_insert_ok}
-% 2> ord_insert_ok:ord_insert(2,[1,2,5]).
-% [1,2,2,5]
-% 3> ord_insert_ok:ord_insert(2,[1,3,5]).
-% [1,2,3,5]
-% 4> ord_insert_ok:is_ordered(ord_insert_ok:ord_insert(2,[1,2,5])).
-% true
-% 5> ord_insert_ok:is_ordered(ord_insert_ok:ord_insert(2,[1,3,5])).
+% 1> c('tests/ord_insert_bug.erl').
+% {ok,ord_insert_bug}
+% 2> ord_insert_bug:ord_insert(2,[1,2,5]).
+% [1,2,2,5]                                   % OK
+% 3> ord_insert_bug:ord_insert(2,[1,3,5]).
+% [1,3,2,5]                                   % BUG!
+% 4> ord_insert_bug:is_ordered(ord_insert_bug:ord_insert(2,[1,3,5])).
+% false
+% 5> ord_insert_bug:is_ordered(ord_insert_bug:ord_insert(2,[1,2,5])).
 % true

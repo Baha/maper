@@ -129,24 +129,21 @@ generate_clauses(Fun) ->
         % io:format("LET (user-defined type)~n"),
         user_bind
     end,
-  EvalStr =
-    case PropType of
-      forall ->
-        "prop_eval(\n    ";
-      _ ->
-        "eval(\n    "
-    end,
   ZipVT = zip_vars_types(Vars, [Types]),
   HeadStr  = pp_head(GenName, ZipVT),
   TypesStr = pp_vars_types(ZipVT),
-  PropStr = EvalStr ++
+  EvalStr = "eval(\n    " ++
     pp_propfun(PropFun) ++ ",\n    " ++
     pp_var_list(ZipVT)  ++ ",\n    " ++
     pp_prop_exp(PropType) ++"\n  )",
-  PpStr = HeadStr ++ TypesStr ++ ",\n  " ++ PropStr ++ ".",
-  % PpStr = HeadStr ++ TypesStr ++ ".",
-  io:format("~s~n~n", [PpStr]).%,
-  % io:format("~p~n", [PropFun]).
+  PpStr =
+    case PropType of
+      forall ->
+        HeadStr ++ TypesStr ++ ",\n  " ++ "prop_" ++ EvalStr;
+      _ ->
+        HeadStr ++ EvalStr ++ ",\n  " ++ TypesStr
+    end,
+  io:format("~s.~n~n", [PpStr]).
 
 get_vars({'fun',_,{clauses,Clauses}}) ->
   FirstClause = hd(Clauses),

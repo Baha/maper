@@ -31,3 +31,6 @@ maper_target: $(SRC_MODULES:%=$(EBIN)/%.beam)
 
 $(EBIN)/%.beam: %.erl
 	$(ERLC) $(ERLC_INCLUDE) -o $(EBIN) $<
+
+clean:
+	rm $(EBIN)/*.beam
