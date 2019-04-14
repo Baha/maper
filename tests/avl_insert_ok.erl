@@ -1,5 +1,5 @@
 -module(avl_insert_ok).
--export([height/1,balanced/1,left_rotate/1,right_rotate/1,insert/2]).
+-export([height/1,bbst/1,left_rotate/1,right_rotate/1,insert/2]).
 
 -include_lib("proper/include/proper.hrl").
 
@@ -18,20 +18,38 @@ height(leaf) -> 0;
 height({node, Left, _Value, Right}) ->
   max(height(Left),height(Right)) + 1.
 
-% balanced(Tree) returns true if Tree is balanced, that is,
--spec balanced(tree(any())) -> boolean().
-% 1. a leaf is balanced
-balanced(leaf) -> true;
-% 2. a node is balanced if
-balanced({node, Left, _Value, Right}) ->
+% bbst(Tree) returns true if Tree is a balanced binary search tree, that is,
+-spec bbst(tree(any())) -> boolean().
+% 1. a leaf is a balanced binary search tree
+bbst(leaf) -> true;
+% 2. a node is a balanced binary search tree if
+bbst({node, Left,Value,Right}) ->
   % 2.1 the balance factor of a node (the difference between the height of the
   % left subtree and the height of the right subtree) belongs to {-1,0,1}, and
   BalanceF = height(Left) - height(Right),
-  BalanceF >= -1 andalso BalanceF =< 1  andalso
-  % 2.2 its subtrees are balanced.
-  balanced(Left) andalso balanced(Right);
+  BalanceF >= -1 andalso BalanceF =< 1 andalso
+  % 2.2 the values of the nodes in the Left subtree are less than Value
+  all_lt(Left,Value) andalso
+  % 2.3 the values of the nodes in the Right subtree are greater than Value
+  all_gt(Right,Value) andalso
+  % 2.4 its subtrees are balanced binary search trees.
+  bbst(Left) andalso bbst(Right);
 % returns false if neither 1 nor 2 hold or the input is not a tree
-balanced(_) -> false.
+bbst(_) -> false.
+
+%% all_lt(Tree,Value) is true if the value of each node of Tree is
+% less than Value
+-spec all_lt(tree(any()),any()) -> boolean().
+all_lt(leaf, _V) -> true;
+all_lt({node, L,X,R},V) -> X < V andalso all_lt(L,V) andalso all_lt(R,V);
+all_lt(_Tree, _V) -> false.
+
+%% all_gt(Tree,Value) is true if the value of each node of Tree is
+% greater than Value
+-spec all_gt(tree(any()),any()) -> boolean().
+all_gt(leaf, _V) -> true;
+all_gt({node, L,X,R},V) -> X > V andalso all_gt(L,V) andalso all_gt(R,V);
+all_gt(_Tree, _V) -> false.
 
 %% insert(Elem,Tree) adds Elem to Tree.
 % This buggy implementation, given any AVL tree, might not return an AVL tree.
@@ -93,16 +111,18 @@ left_rotate({node, L,V,{node, RL,RV,RR}}) -> {node, {node, L,V,RL},RV,RR}.
 %% Specification for AVL trees API
 % avl_tree: balanced binary serach tree
 avl_tree() ->
-  ?SUCHTHAT(Tree, tree(integer()), balanced(Tree)).
+  ?SUCHTHAT(Tree, tree(integer()), bbst(Tree)).
 % adding an element Elem to any AVL tree, produces an AVL tree
 prop_insertion() ->
-  ?FORALL({Elem,Tree}, {integer(),avl_tree()}, balanced(insert(Elem,Tree))).
+  ?FORALL({Elem,Tree}, {integer(),avl_tree()}, bbst(insert(Elem,Tree))).
 
 tree(G) ->
   union([
     'leaf',
     {'node',G,tree(G),tree(G)}
   ]).
+
+% avl_insert_ok:bbst(avl_insert_ok:insert(57,{node,{node,leaf,-24,{node,leaf,72,leaf}},82,{node,{node,leaf,91,leaf},94,{node,leaf,95,{node,leaf,100,leaf}}}})).
 
 %% *** TESTING Coroutining ***
 % $ ./erl2pl.sh tests/avl_insert_ok.erl
@@ -120,69 +140,68 @@ tree(G) ->
 % % 160,458,536 inferences, 24.878 CPU in 24.879 seconds (100% CPU, 6449837 Lips)
 % Hs = [5, 4, 5, 5, 5, 5, 5, 3, 5|...],
 % N = 3673.
-%--- testing gen_avl_tree/1 ----------------------------------------------------
+%%-- testing gen_avl_tree/1 ----------------------------------------------------
 % ?- time(gen_avl_tree(Tree)).
-% % 38,986 inferences, 0.015 CPU in 0.015 seconds (100% CPU, 2654816 Lips)
-% Tree = tuple([lit(atom, node), lit(atom, leaf), lit(int, _9764), lit(atom, leaf)]),
-% _9764 in inf..sup ;
-% % 10,858 inferences, 0.007 CPU in 0.007 seconds (100% CPU, 1483669 Lips)
-% Tree = tuple([lit(atom, node), lit(atom, leaf), lit(int, _15736), tuple([lit(atom, node), lit(atom, leaf), lit(..., ...)|...])]),
-% _15736 in inf..sup,
-% _15782 in inf..sup ;
-% % 250,136,982 inferences, 40.507 CPU in 40.507 seconds (100% CPU, 6175117 Lips)
-% Tree = tuple([lit(atom, node), tuple([lit(atom, node), lit(atom, leaf), lit(int, _51482), lit(atom, leaf)]), lit(int, _51506), lit(atom, leaf)]),
-% _51482 in inf..sup,
-% _51506 in inf..sup
-% * NOTE that we waited a long time to get the third answer.
-% Using the "Interpreter First" approach, that is:
-% gen_avl_tree_interpreterFirst((Tree)) :-
+% % 407 inferences, 0.001 CPU in 0.001 seconds (99% CPU, 641034 Lips)
+% Tree = lit(atom, leaf) ;
+% % 24,853 inferences, 0.012 CPU in 0.012 seconds (100% CPU, 2057818 Lips)
+% Tree = tuple([lit(atom, node), lit(atom, leaf), lit(int, _15202), lit(atom, leaf)]),
+% _15202 in inf..sup ;
+% % 15,653 inferences, 0.015 CPU in 0.015 seconds (100% CPU, 1021072 Lips)
+% Tree = tuple([lit(atom, node), lit(atom, leaf), lit(int, _27656), tuple([lit(atom, node), lit(atom, leaf), lit(int, _27702), lit(atom, leaf)])]),
+% _27656#=<_27702+ -1 ;
+% % 645,348 inferences, 0.180 CPU in 0.180 seconds (100% CPU, 3586377 Lips)
+% Tree = tuple([lit(atom, node), tuple([lit(atom, node), lit(atom, leaf), lit(int, _128206), tuple([lit(atom, node), lit(atom, leaf), lit(int, _128252), lit(atom, leaf)])]), lit(int, _128276), tuple([lit(atom, node), lit(atom, leaf), lit(int, _128322), tuple([lit(atom, node), lit(atom, leaf), lit(int, _128368), lit(atom, leaf)])])]),
+% _128206#=<_128276+ -1,
+% _128206#=<_128252+ -1,
+% _128276#=<_128368+ -1,
+% _128276#=<_128322+ -1,
+% _128252#=<_128276+ -1,
+% _128322#=<_128368+ -1 ;
+% % 122,158 inferences, 0.059 CPU in 0.059 seconds (100% CPU, 2067943 Lips)
+% Tree = tuple([lit(atom, node), tuple([lit(atom, node), lit(atom, leaf), lit(int, _115858), tuple([lit(atom, node), lit(atom, leaf), lit(int, _115904), lit(atom, leaf)])]), lit(int, _115928), tuple([lit(atom, node), tuple([lit(atom, node), lit(atom, leaf), lit(int, _115996), lit(atom, leaf)]), lit(int, _116020), tuple([lit(atom, node), lit(atom, leaf), lit(int, _116066), tuple([lit(atom, node), lit(atom, leaf), lit(int, _116112), lit(atom, leaf)])])])]),
+% _115858#=<_115928+ -1,
+% _115858#=<_115904+ -1,
+% _115928#=<_116112+ -1,
+% _115928#=<_116066+ -1,
+% _115928#=<_116020+ -1,
+% _115928#=<_115996+ -1,
+% _115904#=<_115928+ -1,
+% _116066#=<_116112+ -1,
+% _116020#=<_116112+ -1,
+% _116020#=<_116066+ -1,
+% _115996#=<_116020+ -1 ;
+% % 189,604 inferences, 0.080 CPU in 0.080 seconds (100% CPU, 2374537 Lips)
+% Tree = tuple([lit(atom, node), tuple([lit(atom, node), lit(atom, leaf), lit(int, _97150), tuple([lit(atom, node), lit(atom, leaf), lit(int, _97196), lit(atom, leaf)])]), lit(int, _97220), tuple([lit(atom, node), tuple([lit(atom, node), lit(atom, leaf), lit(int, _97288), lit(atom, leaf)]), lit(int, _97312), tuple([lit(atom, node), tuple([lit(atom, node), lit(atom, leaf), lit(int, _97380), lit(atom, leaf)]), lit(int, _97404), lit(atom, leaf)])])]),
+% _97150#=<_97220+ -1,
+% _97150#=<_97196+ -1,
+% _97220#=<_97404+ -1,
+% _97220#=<_97380+ -1,
+% _97220#=<_97312+ -1,
+% _97220#=<_97288+ -1,
+% _97196#=<_97220+ -1,
+% _97380#=<_97404+ -1,
+% _97312#=<_97404+ -1,
+% _97312#=<_97380+ -1,
+% _97288#=<_97312+ -1
+%%-- testing generation w/o Coroutining ----------------------------------------
+% set_config(max_size(12)).
+% gen_avl_tree_typeofFirst((Tree)) :-
+%   typeof(Tree,tree(integer)),
 %   eval(
-%     apply(var('balanced',1),[var('Tree')]),
+%     apply(var('bbst',1),[var('Tree')]),
 %     [('Tree',Tree)],
 %     lit(atom,true)
-%   ),
-%   typeof(Tree,tree(integer)).
-%%
-% ?- time(gen_avl_tree_interpreterFirst(Tree)).
-% % 12,241 inferences, 0.007 CPU in 0.007 seconds (100% CPU, 1802429 Lips)
-% Tree = tuple([lit(atom, node), lit(atom, leaf), lit(int, _47196), lit(atom, leaf)]),
-% _47196 in inf..sup ;
-% % 14,694 inferences, 0.013 CPU in 0.013 seconds (100% CPU, 1102986 Lips)
-% Tree = tuple([lit(atom, node), lit(atom, leaf), lit(int, _32814), tuple([lit(atom, node), lit(atom, leaf), lit(..., ...)|...])]),
-% _32814 in inf..sup,
-% _32860 in inf..sup ;
-% % 239,969 inferences, 0.058 CPU in 0.058 seconds (100% CPU, 4149272 Lips)
-% Tree = tuple([lit(atom, node), tuple([lit(atom, node), lit(atom, leaf), lit(int, _44010), tuple([...|...])]), lit(int, _44080), tuple([lit(atom, node), lit(atom, leaf), lit(..., ...)|...])]),
-% _44010 in inf..sup,
-% _44056 in inf..sup,
-% _44080 in inf..sup,
-% _44126 in inf..sup,
-% _44172 in inf..sup ;
-% % 90,360 inferences, 0.030 CPU in 0.030 seconds (99% CPU, 3050153 Lips)
-% Tree = tuple([lit(atom, node), tuple([lit(atom, node), lit(atom, leaf), lit(int, _126916), tuple([...|...])]), lit(int, _126986), tuple([lit(atom, node), tuple([...|...]), lit(..., ...)|...])]),
-% _126916 in inf..sup,
-% _126962 in inf..sup,
-% _126986 in inf..sup,
-% _127054 in inf..sup,
-% _127078 in inf..sup,
-% _127124 in inf..sup,
-% _127170 in inf..sup ;
-% % 128,012 inferences, 0.042 CPU in 0.042 seconds (99% CPU, 3059824 Lips)
-% Tree = tuple([lit(atom, node), tuple([lit(atom, node), lit(atom, leaf), lit(int, _109062), tuple([...|...])]), lit(int, _109132), tuple([lit(atom, node), tuple([...|...]), lit(..., ...)|...])]),
-% _109062 in inf..sup,
-% _109108 in inf..sup,
-% _109132 in inf..sup,
-% _109200 in inf..sup,
-% _109224 in inf..sup,
-% _109292 in inf..sup,
-% _109316 in inf..sup ;
-% % 21,982 inferences, 0.023 CPU in 0.023 seconds (99% CPU, 955111 Lips)
-% Tree = tuple([lit(atom, node), tuple([lit(atom, node), lit(atom, leaf), lit(int, _96724), tuple([...|...])]), lit(int, _96794), tuple([lit(atom, node), tuple([...|...]), lit(..., ...)|...])]),
-% _96724 in inf..sup,
-% _96770 in inf..sup,
-% _96794 in inf..sup,
-% _96862 in inf..sup,
-% _96886 in inf..sup,
-% _96954 in inf..sup,
-% _96978 in inf..sup,
-% _97024 in inf..sup
+%   ).
+% ?- time(gen_avl_tree_typeofFirst(Tree)).
+% % 338 inferences, 0.001 CPU in 0.001 seconds (99% CPU, 510100 Lips)
+% Tree = lit(atom, leaf) ;
+% % 6,431 inferences, 0.005 CPU in 0.005 seconds (100% CPU, 1288515 Lips)
+% Tree = tuple([lit(atom, node), lit(atom, leaf), lit(int, _39204), lit(atom, leaf)]),
+% _39204 in inf..sup ;
+% % 12,464 inferences, 0.009 CPU in 0.009 seconds (100% CPU, 1335603 Lips)
+% Tree = tuple([lit(atom, node), lit(atom, leaf), lit(int, _87496), tuple([lit(atom, node), lit(atom, leaf), lit(..., ...)|...])]),
+% _87496#=<_87542+ -1 ;
+% % 3,375,837,108 inferences, 514.566 CPU in 514.571 seconds (100% CPU, 6560553 Lips)
+% Tree = tuple([lit(atom, node), tuple([lit(atom, node), lit(atom, leaf), lit(int, _59186), lit(atom, leaf)]), lit(int, _59210), lit(atom, leaf)]),
+% _59186#=<_59210+ -1 
