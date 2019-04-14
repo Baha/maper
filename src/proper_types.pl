@@ -74,16 +74,16 @@ typeof(X,T) :-
 	!,
 	size(S),
 	max_size(MaxS),
-	repeat(MaxS), % repeat MaxS times
+	repeat(MaxS+1), % repeat MaxS+1 times
 	random_size(S),
 	typeof_(X,T,S).
 
 typeof(X,T) :-
 	config(random_size(all)),
 	!,
-	start_size(S1),
-	max_size(S2),
-	S in S1..S2,
+	start_size(StartS),
+	max_size(MaxS),
+	S in StartS..MaxS,
 	label(S),
 	typeof_(X,T,S).
 
