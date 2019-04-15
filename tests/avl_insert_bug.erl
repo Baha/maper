@@ -71,8 +71,8 @@ re_balance(E,Root) ->
     % Left unbalanced
     2 -> {node, _,LV,_} = L,
       if
-        E > LV -> right_rotate(Root); % > should be <
-        E < LV -> right_rotate({node, left_rotate(L),V,R}) % < should be >
+        E < LV -> right_rotate(Root);
+        E > LV -> right_rotate({node, left_rotate(L),V,R})
       end;
     % Right unbalanced
    -2 -> {node, _,RV,_} = R,

@@ -1,21 +1,20 @@
 :- use_module(library(clpr)).
 :- use_module(library(clpfd)).
-
+:- use_module('./eval.pl').
 :- consult('./proper_types.pl').
-:- consult('./eval.pl').
 
 :- working_directory(CWD, CWD),
    working_directory(CWD, CWD).
 
-
-:- dynamic config/1.
-
+config(int_exp(2)).
 
 % ------------------------------------------------------------------------------
 % lit(int,X)
 % ------------------------------------------------------------------------------
 
-int_sup(Sup) :- Exp is 2, Sup is 10**Exp.
+int_sup(Sup) :-
+  config(int_exp(Exp)),
+  Sup is 10**Exp.
 int_inf(Inf) :- int_sup(Sup), Inf is -Sup.
 
 int_sup(X,SupX) :- fd_sup(X,S),
@@ -79,10 +78,6 @@ rand_float(X) :-
 
 % generate, instantiate and write N instances of G
 generate_test_cases(G,N) :-
-%	retractall(config(_)),
-%	assertz(config(start_size(1))),
-%	assertz(config(max_size(10))),
-
   once(
       findnsols(N, _,
               (

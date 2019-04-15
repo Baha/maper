@@ -3,8 +3,13 @@
 # Usage example:
 # ./full_tester.sh tests/biggest_bug.erl prop_biggest
 
-PROP_CFG="prop_types_cfg.pl"
+GEN_CFG="gen_cfg.pl"
 DEFAULT_NUM_TESTS=10
+
+function print_help()
+{
+  echo "Not yet implemented!" # TODO
+}
 
 # ------------------------------------------------------------------------------
 # parse parameters
@@ -12,7 +17,7 @@ DEFAULT_NUM_TESTS=10
 # '::' (two consequent colon character) tells that the option has an optional argument.
 # ------------------------------------------------------------------------------
 ARGS=$(getopt -o h -a \
-     --long "max-size:,min-size:,tests:"\
+     --long "max-size:,min-size:,tests:,range-exp:,help"\
      -n "$0" -- "$@");
 
 if [ $? -ne 0 ]; then
@@ -25,21 +30,35 @@ eval set -- "$ARGS";
 while true; do
   case $1 in
   --max-size)
-    echo ":- set_config(max_size($2))." >> "$PROP_CFG"
+    echo ":- set_config(max_size($2))." >> "$GEN_CFG"
     shift 2
   ;;
   --min-size)
-    echo ":- set_config(start_size($2))." >> "$PROP_CFG"
+    echo ":- set_config(start_size($2))." >> "$GEN_CFG"
     shift 2
   ;;
   --tests)
     if [ $2 -gt 0 ]; then
       DEFAULT_NUM_TESTS=$2
+      shift 2
     else
       echo "tests must be greater than 0"
       exit 1
     fi
-    shift 2
+  ;;
+  --range-exp)
+    if [ $2 -gt 0 ]; then
+      echo ":- set_config(int_exp($2))." >> "$GEN_CFG"
+      shift 2
+    else
+      echo "the exponent must be greater than 0"
+      exit 1
+    fi
+  ;;
+  -h | --help)
+    print_help
+    shift
+    exit 0
   ;;
   --)
     shift
@@ -57,9 +76,9 @@ fi
 
 ./erl2pl.sh $1
 
-if [ -e $PROP_CFG ]; then
-  cat $PROP_CFG >> ${1%%.erl}.pl
-  rm $PROP_CFG
+if [ -e $GEN_CFG ]; then
+  cat $GEN_CFG >> ${1%%.erl}.pl
+  rm $GEN_CFG
 fi
 
 # ./pbgen.sh ${1%%.erl} "gen_"$2 $DEFAULT_NUM_TESTS | ./erl_tester.sh ${1%%.erl} $2
