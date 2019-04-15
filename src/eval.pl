@@ -8,7 +8,6 @@
 :- dynamic user:file_search_path/2.
 
 :- dynamic eval_option/1.
-:- assert(eval_option(use_spec)).
 
 user:file_search_path(erlang_module,ModulesDir) :-
   user:file_search_path(maper_src,Base),

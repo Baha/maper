@@ -17,7 +17,7 @@ function print_help()
 # '::' (two consequent colon character) tells that the option has an optional argument.
 # ------------------------------------------------------------------------------
 ARGS=$(getopt -o h -a \
-     --long "max-size:,min-size:,tests:,range-exp:,help"\
+     --long "max-size:,min-size:,tests:,range-exp:,force-spec,help"\
      -n "$0" -- "$@");
 
 if [ $? -ne 0 ]; then
@@ -54,6 +54,10 @@ while true; do
       echo "the exponent must be greater than 0"
       exit 1
     fi
+  ;;
+  --force-spec)
+    echo ":- eval:assert(eval_option(use_spec))." >> "$GEN_CFG"
+    shift
   ;;
   -h | --help)
     print_help
