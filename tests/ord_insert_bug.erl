@@ -1,5 +1,5 @@
 -module(ord_insert_bug).
--export([ord_insert/2,is_ordered/1]).
+-export([insert/2,is_ordered/1]).
 
 -include_lib("proper/include/proper.hrl").
 
@@ -8,31 +8,31 @@ is_ordered([A,B|T]) ->
 is_ordered(_) -> % smaller lists
   true.
 
-ord_insert(I,[]) ->
+insert(I,[]) ->
   [I];
-ord_insert(I,[X|Xs]) when I =< X ->
+insert(I,[X|Xs]) when I =< X ->
   [X,I|Xs]; % it should be [I,X|Xs]
-ord_insert(I,[X|Xs]) ->
-  [X] ++ ord_insert(I,Xs).
+insert(I,[X|Xs]) ->
+  [X] ++ insert(I,Xs).
 
-%==============================================================================
-%% Specification of the insertion sort
+%===============================================================================
+%% Specification of the insertion function (part of the insertion sort algoritm)
 ordered_list() ->
-  ?SUCHTHAT(List, non_empty(list(integer())), is_ordered(List)).
+  ?SUCHTHAT(L, non_empty(list(integer())), is_ordered(L)).
 
 prop_ordered_insert() ->
-  ?FORALL( {Elem,List}, { integer(), ordered_list() },
-    is_ordered(ord_insert(Elem,List))
+  ?FORALL( {E,L}, { integer(), ordered_list() },
+    is_ordered(insert(E,L))
   ).
 
 % Eshell V9.2  (abort with ^G)
 % 1> c('tests/ord_insert_bug.erl').
 % {ok,ord_insert_bug}
-% 2> ord_insert_bug:ord_insert(2,[1,2,5]).
+% 2> ord_insert_bug:insert(2,[1,2,5]).
 % [1,2,2,5]                                   % OK
-% 3> ord_insert_bug:ord_insert(2,[1,3,5]).
+% 3> ord_insert_bug:insert(2,[1,3,5]).
 % [1,3,2,5]                                   % BUG!
-% 4> ord_insert_bug:is_ordered(ord_insert_bug:ord_insert(2,[1,3,5])).
+% 4> ord_insert_bug:is_ordered(ord_insert_bug:insert(2,[1,3,5])).
 % false
-% 5> ord_insert_bug:is_ordered(ord_insert_bug:ord_insert(2,[1,2,5])).
+% 5> ord_insert_bug:is_ordered(ord_insert_bug:insert(2,[1,2,5])).
 % true
