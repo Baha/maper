@@ -108,8 +108,15 @@ typeof_(X,T,S) :-
 
 
 typeof_(X,T,S) :-
-  typedef(T,D),
-  typeof_(X,D,S).
+%  typedef(T,D),
+  typedef_union(T,D),
+	typeof_(X,D,S).
+
+typedef_union(T,union(L)) :- findall(D,typedef(T,D),L), L \==[].
+
+%typedef(tree(_T),exactly(lit(atom,leaf))).
+%typedef(tree(T),tuple([exactly(lit(atom,node)),T,tree(T),tree(T)])).
+
 
 
 %
@@ -129,10 +136,6 @@ sizeof_list([X|Xs],S) :-
 							{ S1>=0, S2>=0, S=S1+S2},
               sizeof(X,S1),
               sizeof_list(Xs,S2).
-
-
-%typedef(tree(_T),exactly(lit(atom,leaf))).
-%typedef(tree(T),tuple([exactly(lit(atom,node)),T,tree(T),tree(T)])).
 
 
 proper_type_to_prolog(integer,0,integer_) :- !.
@@ -277,15 +280,22 @@ llength(cons(_,Xs),L) :- clpq:{L1>=0, L=1+L1}, llength(Xs,L1).
 
 % ------------------------------------------------------------------------------
 % union_(Values,TypesLst,Size)
-% Proper ignores size of union
-union_(X,ListOfTypes,_) :-
-	(config(random_union)  ->
+% note PropEr ignores size of union
+union_(X,ListOfTypes,S) :-
+	ListOfTypes \== [],
+	( (config(random_union) ) ->
 		% use nondet random member selection based on random_member/2
-			random_member(T,ListOfTypes)
+			member_random(T,ListOfTypes)
 		;
   		member(T,ListOfTypes)
 	),
-  typeof(X,T).
+  typeof_(X,T,S).
+
+% like random_member but produces all answers when backtracking
+member_random(X,L) :-
+	random_select(Y,L,Rest),
+	(X=Y; member_random(X,Rest)).
+
 
 
 % ------------------------------------------------------------------------------
@@ -298,7 +308,7 @@ union_(X,ListOfTypes,_) :-
 
 tuple(tuple(X),T,S) :-
 	lists_same_length(X,T,_L),
-	{S = 1+S1},
+	{S = 1+S1, S1>=0},
 	tuple_(X,T,S1).
 
 tuple_([],[],S) :- {S=0}.
@@ -342,6 +352,7 @@ list_same_element([T|Xs],T) :-
 % ------------------------------------------------------------------------------
 %
 exactly(X,Term,S) :-
+	{S>=0},
 	sizeof(Term,S),
   X = Term.
 
