@@ -6,11 +6,10 @@
 :- working_directory(CWD, CWD),
    working_directory(CWD, CWD).
 
-config(int_exp(2)).
-
 % ------------------------------------------------------------------------------
 % lit(int,X)
 % ------------------------------------------------------------------------------
+:- set_config(int_exp(2)).
 
 int_sup(Sup) :-
   config(int_exp(Exp)),

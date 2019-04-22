@@ -1,10 +1,18 @@
-:- module(match,
-  [ deterministic_match/5
-  , random_select_match/5
-  ]).
+:- module(match,[match/5]).
 
 :- use_module(library(clpfd)).
 :- include('utils').
+
+:- dynamic match/5.
+match(IEnv,Exps,Cls, OEnv,OExp) :-
+  deterministic_match(IEnv,Exps,Cls, OEnv,OExp).
+:- dynamic user:random_select_match/0.
+:- if(user:random_select_match).
+:- retractall(match(_IEnv,_Exps,_Cls, _OEnv,_OExp)).
+:- assert( ( goal_expansion( match(IEnv,Exps,Cls, OEnv,OExp) :-
+      random_select_match(IEnv,Exps,Cls, OEnv,OExp) ) ) ).
+:- endif.
+
 
 %% deterministic_match(+IEnv,+Exps,+Cls, -OEnv,-OExp)
 % matches a list of expressions Exps against a list of clauses Cls and returns

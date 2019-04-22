@@ -26,15 +26,6 @@ user:file_search_path(maper_src,'src').
 :- dynamic user:fundef/3.
 :- multifile user:fundef/3.
 
-:- dynamic user:random_select_match/0.
-:- if(user:random_select_match).
-goal_expansion( match(IEnv,Exps,Cls, OEnv,OExp),
-  random_select_match(IEnv,Exps,Cls, OEnv,OExp) ).
-:- else.
-goal_expansion( match(IEnv,Exps,Cls, OEnv,OExp),
-  deterministic_match(IEnv,Exps,Cls, OEnv,OExp) ).
-:- endif.
-
 %% run(mod,fun,args,final_env,final_exp)
 %% loads mod and evaluates fun (from mod)
 run_prog(Mod,(Fun,Arity),Args,FExp) :-
@@ -109,20 +100,21 @@ let_cont(_Env,_Var,EExpr1,_Expr2,EExpr1) :-
   EExpr1 = error(_Reason).
 
 %% (Case) ----------------------------------------------------------------------
-eval(case(IExps,Clauses),Env,Exp) :-
-  eval_list(IExps,Env,EExps),
-%  match(Env,EExps,Clauses,NEnv,NExp),
-%  eval(NExp,NEnv,Exp).
-  case_cont(Env,EExps,Clauses, Exp).
-%
-case_cont(Env,Exps,Clauses, Exp) :-
-  ( suspend_on(Env,Exps,Clauses, Cond) ->
-    when(Cond, case_cont(Env,Exps,Clauses,Exp) )
-  ;
-    ( match(Env,Exps,Clauses, MEnv,ClBody), eval(ClBody,MEnv,Exp) )
-  ).
-%
+eval(case(CExps,Clauses),Env,Exp) :-
+  eval_list(CExps,Env,EExps),
+  suspend_on(Env,EExps,Clauses, Cond),
+  when(Cond, ( match(Env,EExps,Clauses, MEnv,ClBody), eval(ClBody,MEnv,Exp) ) ).
+% Cond is either a conjunction of the form ( nonvar(V1) , ..., nonvar(Vn) ), or
 suspend_on(Env,Exps,Clauses, Cond) :-
+  exists_pattern_on_compound_datatype(Env,Exps,Clauses, Cond),
+  !.
+% ground(goOn)
+suspend_on(_Env,_Exps,_Clauses, Cond) :-
+  Cond = ground(goOn).
+% exists_pattern_on_compound_datatype(+Env,+Exps,+Clauses,-Cond)
+% if there exists a clause Cl in Clauses matching Exps, and C binds V1,...,Vn
+% to list or tuples, then Cond is of the form ( nonvar(V1) , ..., nonvar(Vn) )
+exists_pattern_on_compound_datatype(Env,Exps,Clauses, Cond) :-
   term_variables(Exps,ExpsVars),
   copy_term((Env,Exps,ExpsVars),(CpyEnv,CpyExps,CpyExpsVars)),
   match(CpyEnv,CpyExps,Clauses, _MEnv,_ClBody),
@@ -136,18 +128,15 @@ filter_bindings([_|As],[T|Bs], Vs) :-
 filter_bindings([_|As],[T|Bs], Vs) :-
   nonvar(T), T = lit(_,_),
   filter_bindings(As,Bs, Vs).
-filter_bindings([_|As],[T|Bs], Vs) :-
-  nonvar(T), T = nil,
+filter_bindings([V|As],[T|Bs], [V|Vs] ) :-
+  nonvar(T), ( T == nil ; T = cons(_,_) ), % lists
   filter_bindings(As,Bs, Vs).
 filter_bindings([V|As],[T|Bs], [V|Vs] ) :-
-  nonvar(T), T = cons(_,_),
-  filter_bindings(As,Bs, Vs).
-filter_bindings([V|As],[T|Bs], [V|Vs] ) :-
-  nonvar(T), T = tuple(_),
+  nonvar(T), T = tuple(_), % tuples
   filter_bindings(As,Bs, Vs).
 %
 vars2cond([V],nonvar(V)).
-vars2cond([V|Vs], ( nonvar(V) ; Cond ) ) :-
+vars2cond([V|Vs], ( nonvar(V) , Cond ) ) :-
   vars2cond(Vs, Cond ).
 
 %% (Apply) ---------------------------------------------------------------------

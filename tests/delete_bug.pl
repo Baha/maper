@@ -30,13 +30,13 @@ gen_prop_delete_only_interesting1((X,L)) :-
   ).
 
 gen_list_and_elem1((X,L)) :-
-  typeof(X,integer),
-  typeof(L,list(integer)),
   eval(
     call(lit(atom,'lists'),lit(atom,'member'),[var('X'),var('L')]),
     [('X',X),('L',L)],
     lit(atom,true)
-  ).
+  ),
+  typeof(X,integer),
+  typeof(L,list(integer)).
 
 gen_prop_delete_only_interesting2((X,L)) :-
   gen_list_and_elem1((X,L)),
@@ -47,12 +47,12 @@ gen_prop_delete_only_interesting2((X,L)) :-
   ).
 
 gen_list_and_elem2((L)) :-
-  typeof(L,non_empty(list(integer))),
   eval(
     tuple(apply(var('oneof',1),[var('L')]),var('L')),
     [('L',L)],
     lit(atom,true)
-  ).
+  ),
+  typeof(L,non_empty(list(integer))).
 
 gen_prop_delete_only_interesting3((X,L)) :-
   gen_list_and_elem2((X,L)),
@@ -62,3 +62,4 @@ gen_prop_delete_only_interesting3((X,L)) :-
     lit(atom,_Res)
   ).
 
+:- eval:assert(eval_option(use_spec)).
