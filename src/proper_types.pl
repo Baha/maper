@@ -83,8 +83,7 @@ typeof(X,T) :-
 	!,
 	start_size(StartS),
 	max_size(MaxS),
-	S in StartS..MaxS,
-	label(S),
+	random_between_all2(StartS,MaxS,S),
 	typeof_(X,T,S).
 
 typeof(X,T) :-
@@ -232,6 +231,40 @@ random_size(N) :-
 	max_size(MaxL),
 	random_between(MinL,MaxL,N).
 
+
+
+% like random_between but produces all answers when backtracking
+random_between_all(Min,Max,N) :-
+	findall(X,between(Min,Max,X),L),
+	random_select_all(N,L).
+
+random_select_all(N,L) :-
+	random_select(E,L,Rest),
+	(N=E; random_select_all(N,Rest) ).
+
+
+% like random_between_all but without explicit list generation
+random_between_all2(MinL,MaxL,N) :-
+ 	{N>=MinL, N=<MaxL},
+ 	random_between(MinL,MaxL,X),
+ 	(
+		{N=X}
+	;
+		({N>=X+1}, random_between_all2(MinL,MaxL,N))
+		;
+		({N=<X-1}, random_between_all2(MinL,MaxL,N))
+	).
+
+
+
+% like random_member but produces all answers when backtracking
+member_random(X,L) :-
+	random_select(Y,L,Rest),
+	(X=Y; member_random(X,Rest)).
+
+
+
+
 size(N) :-
   	start_size(MinL),
   	max_size(MaxL),
@@ -290,11 +323,6 @@ union_(X,ListOfTypes,S) :-
   		member(T,ListOfTypes)
 	),
   typeof_(X,T,S).
-
-% like random_member but produces all answers when backtracking
-member_random(X,L) :-
-	random_select(Y,L,Rest),
-	(X=Y; member_random(X,Rest)).
 
 
 
