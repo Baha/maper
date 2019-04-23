@@ -72,9 +72,10 @@ typeof(X,T) :-
 typeof(X,T) :-
 	config(random_size(any)),
 	!,
-	size(S),
+	start_size(StartS),
 	max_size(MaxS),
-	repeat(MaxS+1), % repeat MaxS+1 times
+	N is MaxS-StartS+1,
+	repeat(N),
 	random_size(S),
 	typeof_(X,T,S).
 
