@@ -1,7 +1,7 @@
 :- use_module(library(clpr)).
 :- use_module(library(clpfd)).
 :- use_module('./eval.pl').
-:- consult('./proper_types.pl').
+:- consult('./typeof.pl').
 
 :- working_directory(CWD, CWD),
    working_directory(CWD, CWD).
@@ -9,23 +9,19 @@
 % ------------------------------------------------------------------------------
 % lit(int,X)
 % ------------------------------------------------------------------------------
-:- set_config(int_exp(2)).
-
-int_sup(Sup) :-
-  config(int_exp(Exp)),
-  Sup is 10**Exp.
-int_inf(Inf) :- int_sup(Sup), Inf is -Sup.
+:- set_config(int_sup(1000)).
+:- set_config(int_inf(-1000)).
 
 int_sup(X,SupX) :- fd_sup(X,S),
 		(S==sup ->
-			int_sup(SupX)
+			config(int_sup(SupX))
 			;
 			SupX=S
 		).
 
 int_inf(X,InfX) :- fd_inf(X,I),
 		(I==inf ->
-			int_inf(InfX)
+			config(int_inf(InfX))
 			;
 			InfX=I
 		).
@@ -77,14 +73,15 @@ rand_float(X) :-
 
 % generate, instantiate and write N instances of G
 generate_test_cases(G,N) :-
+  M is sqrt(N),
+  C is ceil(M),
   once(
       findnsols(N, _,
-              (
-                  call(G)  ,
-                	G =.. [_,Arg],
-                	conj_to_list(Arg,ArgL),
+              (   call(G), % eval & typeof
+                  %write(user_error,'ciao'),
+                	G =.. [_|ArgL], length(ArgL,AL),
+                  between(1,C,_),
                 	maplist(rand_elem,ArgL),
-                	length(ArgL,AL),
                 	findall(_,(nth1(I,ArgL,X), write_elem(X), (I<AL -> write(',') ; true)),_)
                   , nl
             )
@@ -169,29 +166,15 @@ write_elem_tuple_([X,Y|L]) :-  write_elem(X), write(','), write_elem_tuple_([Y|L
 
 
 %%%% UTILITIES %%%%%%
-
 run :-
-	prolog_flag(argv,ArgV),
-	ArgV = [Example,Prop,NS],
-	consult(Example),
-	CallA =.. [Prop,_],
-	atom_number(NS,N),
-	% gtime().
-  generate_test_cases(CallA,N).
-
-
-
-% conj_to_list(S,L): S a conjunction of the form (A1,...,An), and L is the list [A1,...,An].
-conj_to_list(X,[]) :-
-  X==true,
-  !.
-conj_to_list(B,L) :-
-  ( nonvar(B), functor(B,',',_) ->
-    ( B = (B1,B2), L=[B1|H], conj_to_list(B2,H) )
-  ;
-    L=[B]
-  ).
-
+  prolog_flag(argv,ArgV),
+  ArgV = [Example,Prop,NS],
+  consult(Example),
+  current_predicate(Prop/Arity),
+  functor(CallA,Prop,Arity),
+  atom_number(NS,N),
+  gtime(
+    generate_test_cases(CallA,N) ).
 
 % % Code borrowed from Richard O'Keefe, The Craft of Prolog
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -215,4 +198,8 @@ gtime(G) :-
 	G,
 	statistics(runtime,[T2,_]),
 	Time is T2-T1,
-	write('Time: '), write(Time), write(' ms'), nl, flush_output.
+  format(atom(Msec),'~2f~n', [Time/1000]),
+  flush_output,
+  open('timings.txt',append,Fd,[]),
+	write(Fd,Msec),
+  close(Fd).

@@ -1,2 +1,0 @@
-fundef(lit(atom,'sum_list'),var('main',1),fun([var('@c0')],case([var('@c0')],[clause([nil],lit(atom,'true'),lit(int,0)),clause([cons(var('H'),var('T'))],lit(atom,'true'),let([var('@c1')],apply(var('main',1),[var('T')]),call(lit(atom,'erlang'),lit(atom,'+'),[var('H'),var('@c1')]))),clause([var('@c2')],lit(atom,'true'),primop(lit(atom,'match_fail'),[tuple([lit(atom,'case_clause'),var('@c2')])]))]))).
-

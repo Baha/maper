@@ -164,7 +164,8 @@ zip_vars_types([V|RVars],[T|RTypes]) ->
 pp_head(GenName, VarsTypes) ->
   VarsStr = [pp_var(V) || {V,_} <- VarsTypes],
   JointStr = string:join(VarsStr, ","),
-  HeadStr = "gen_" ++ GenName ++ "((" ++ JointStr ++ ")) :-\n  ",
+  %HeadStr = "gen_" ++ GenName ++ "((" ++ JointStr ++ ")) :-\n  ",
+  HeadStr = "gen_" ++ GenName ++ "(" ++ JointStr ++ ") :-\n  ",
   HeadStr.
 
 pp_var(ConsVars = {cons,_,_,_}) ->

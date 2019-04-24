@@ -1,2 +1,0 @@
-fundef(lit(atom,'odd'),var('odd',1),fun([var('@c0')],case([var('@c0')],[clause([lit(int,0)],lit(atom,'true'),lit(atom,'false')),clause([lit(int,1)],lit(atom,'true'),lit(atom,'true')),clause([var('N')],call(lit(atom,'erlang'),lit(atom,'>='),[var('@c0'),lit(int,2)]),let([var('@c1')],call(lit(atom,'erlang'),lit(atom,'-'),[var('N'),lit(int,2)]),apply(var('odd',1),[var('@c1')]))),clause([lit(atom,'a')],lit(atom,'true'),lit(int,0)),clause([var('@c2')],lit(atom,'true'),primop(lit(atom,'match_fail'),[tuple([lit(atom,'function_clause'),var('@c2')])]))]))).
-

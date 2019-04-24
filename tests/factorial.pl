@@ -1,2 +1,0 @@
-fundef(lit(atom,'factorial'),var('fact',1),fun([var('@c0')],case([var('@c0')],[clause([lit(int,0)],lit(atom,'true'),lit(int,1)),clause([var('N')],call(lit(atom,'erlang'),lit(atom,'>'),[var('@c0'),lit(int,0)]),let([var('@c1')],call(lit(atom,'erlang'),lit(atom,'-'),[var('N'),lit(int,1)]),let([var('@c2')],apply(var('fact',1),[var('@c1')]),call(lit(atom,'erlang'),lit(atom,'*'),[var('N'),var('@c2')])))),clause([var('@c3')],lit(atom,'true'),primop(lit(atom,'match_fail'),[tuple([lit(atom,'function_clause'),var('@c3')])]))]))).
-

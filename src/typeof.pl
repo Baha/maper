@@ -2,9 +2,6 @@
 :- use_module(library(clpr)).
 
 :- dynamic config/1.
-%:- dynamic typedef/2.
-
-
 
 unset_config(X) :-
 	 	X =.. [F|As],
@@ -13,11 +10,11 @@ unset_config(X) :-
 		X1 =.. [F|DontCare],
 		retractall(config(X1)).
 
-% :- set_config(random_tuple).
-
 set_config(C) :-
 	unset_config(C),
 	assertz(config(C)).
+
+% :- set_config(random_tuple).
 
 show_config :-
 	findall(X, (config(X),write(X),nl), _).

@@ -124,4 +124,3 @@ get_free() ->
 
 free_named_var(NameRoot) ->
   erl_syntax:revert(erl_syntax:variable("_" ++ NameRoot ++ integer_to_list(get_free()))).
-

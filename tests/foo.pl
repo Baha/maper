@@ -1,6 +1,0 @@
-fundef(lit(atom,'foo'),var('foo',2),fun([var('@c1'),var('@c0')],case([var('@c1'),var('@c0')],[clause([var('X'),tuple([var('Y'),var('Z')])],lit(atom,'true'),let([var('@c5')],case([apply(var('h',1),[var('X')])],[clause([lit(int,1)],lit(atom,'true'),let([var('@c2')],apply(var('h',1),[var('Y')]),apply(var('g',1),[var('@c2')]))),clause([lit(int,2)],lit(atom,'true'),let([var('@c3')],apply(var('g',1),[var('Y')]),apply(var('h',1),[var('@c3')]))),clause([var('@c4')],lit(atom,'true'),primop(lit(atom,'match_fail'),[tuple([lit(atom,'case_clause'),var('@c4')])]))]),case([var('@c5')],[clause([var('@c9')],call(lit(atom,'erlang'),lit(atom,'=:='),[var('@c5'),var('Z')]),call(lit(atom,'erlang'),lit(atom,'+'),[var('Z'),lit(int,1)])),clause([var('@c6')],lit(atom,'true'),primop(lit(atom,'match_fail'),[tuple([lit(atom,'badmatch'),var('@c6')])]))]))),clause([var('@c8'),var('@c7')],lit(atom,'true'),primop(lit(atom,'match_fail'),[tuple([lit(atom,'function_clause'),var('@c8'),var('@c7')])]))]))).
-
-fundef(lit(atom,'foo'),var('g',1),fun([var('@c0')],call(lit(atom,'erlang'),lit(atom,'+'),[var('@c0'),lit(int,1)]))).
-
-fundef(lit(atom,'foo'),var('h',1),fun([var('@c0')],call(lit(atom,'erlang'),lit(atom,'-'),[var('@c0'),lit(int,1)]))).
-
