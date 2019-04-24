@@ -2,6 +2,7 @@
 :- use_module(library(clpr)).
 
 :- dynamic config/1.
+%:- dynamic typedef/2.
 
 
 
@@ -297,9 +298,10 @@ list_(cons(X,Xs),T,S) :-
 % ------------------------------------------------------------------------------
 % fixed_list(ValuesLst,TypesLst)
 fixed_list(nil,nil,S) :- {S=0}.
-fixed_list(cons(X,Xs),cons(T,Ts)) :-
-  typeof(X,T),
-  fixed_list(Xs,Ts).
+fixed_list(cons(X,Xs),cons(T,Ts),S) :-
+	{S1>=0, S2>=0, S=1+S1+S2},
+  typeof(X,T,S1),
+  fixed_list(Xs,Ts,S2).
 
 
 % ------------------------------------------------------------------------------
