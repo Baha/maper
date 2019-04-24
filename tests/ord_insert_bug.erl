@@ -21,7 +21,7 @@ insert(I,L) ->
 ordered_list() ->
   ?SUCHTHAT(L, non_empty(list(integer())), ordered(L)).
 
-prop_insert() ->
+prop_ordered_insert() ->
   ?FORALL({E,L}, { integer(), ordered_list() }, ordered(insert(E,L))).
 
 % Eshell V9.2  (abort with ^G)

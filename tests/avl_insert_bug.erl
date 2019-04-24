@@ -19,7 +19,7 @@ height(T) ->
     leaf -> 0;
     {node, Left, _Value, Right} ->
       max(height(Left),height(Right)) + 1
-  end.
+end.
 
 % avl(Tree) returns true if Tree is a balanced binary search tree
 -spec avl(tree(any())) -> boolean().
@@ -34,30 +34,30 @@ avl(T) ->
       BalanceF = height(Left) - height(Right),
       BalanceF >= -1 andalso BalanceF =< 1 andalso
       % 2.2 all nodes of the Left subtree are less than Value
-      lbst(Left,Value) andalso
+      ltt(Left,Value) andalso
       % 2.3 all nodes of the Right subtree are greater than Value
-      rbst(Right,Value) andalso
+      gtt(Right,Value) andalso
       % 2.4 the Left and the Right subtrees are balanced binary search trees
       avl(Left) andalso avl(Right);
     % returns false if neither 1 nor 2 hold or the input is not a tree
     _ -> false
   end.
 
-%% lbst(Tree,Value) is true if for each node n in Tree, value(n) < Value
--spec lbst(tree(any()),any()) -> boolean().
-lbst(T,V) ->
+%% ltt(Tree,Value) is true if for each node n in Tree, value(n) < Value
+-spec ltt(tree(any()),any()) -> boolean().
+ltt(T,V) ->
   case T of
     leaf -> true;
-    {node, L,X,R} -> X < V andalso lbst(L,V) andalso lbst(R,V);
+    {node, L,X,R} -> X < V andalso ltt(L,V) andalso ltt(R,V);
     _T -> false
   end.
 
 %% all_gt(Tree,Value) is true if for each node n in Tree, value(n) > Value
--spec rbst(tree(any()),any()) -> boolean().
-rbst(T,V) ->
+-spec gtt(tree(any()),any()) -> boolean().
+gtt(T,V) ->
   case T of
     leaf -> true;
-    {node, L,X,R} -> X > V andalso rbst(L,V) andalso rbst(R,V);
+    {node, L,X,R} -> X > V andalso gtt(L,V) andalso gtt(R,V);
     _T -> false
   end.
 
