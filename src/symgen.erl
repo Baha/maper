@@ -224,7 +224,8 @@ pp_vt({var,_,Var}, {call,_,{atom,_,CName},Args}) ->
 pp_vt(Vars,{call,_,{atom,_,CName},_Args}) ->
   CallStr = atom_to_list(CName),
   ArgsStr = "(" ++ pp_var(Vars) ++ ")",
-  GenStr = "gen_" ++ CallStr ++ "(" ++ ArgsStr ++ ")",
+  %GenStr = "gen_" ++ CallStr ++ "(" ++ ArgsStr ++ ")",
+  GenStr = "gen_" ++ CallStr ++ ArgsStr,
   GenStr.
 
 % is_predef determines if type is predef or user-defined

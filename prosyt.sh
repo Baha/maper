@@ -9,6 +9,13 @@ verbose=false
 
 SPATH="$(dirname $(readlink -f $0))"
 
+function clean_up()
+{
+  rm -f $GEN_CFG
+  rm -f timings.txt
+  rm -f pbgen_data.txt
+}
+
 function print_help()
 {
   local bold=`tput bold`
@@ -135,9 +142,14 @@ while true; do
   esac
 done
 
-if [ $# -ne 2 ]
-then
+if [ $# -ne 2 ]; then
   echo "Please, select a file and property."
+  exit 1
+fi
+
+if [[ ! -f $1 ]]; then
+  echo $1 "does not exist."
+  clean_up
   exit 1
 fi
 
@@ -149,6 +161,11 @@ if [ -e $GEN_CFG ]; then
 fi
 
 ./scripts/pbgen.sh ${1%%.erl} "gen_"$2 $DEFAULT_NUM_TESTS > pbgen_data.txt
+if [[ $? == 42 ]]; then
+  echo $2 "does not exist."
+  clean_up
+  exit 1
+fi
 
 printf "\nTests Results: "
 cat pbgen_data.txt | /usr/bin/time -f "%U" -a -o timings.txt ./scripts/erl_tester.sh ${1%%.erl} $2

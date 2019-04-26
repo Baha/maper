@@ -76,28 +76,22 @@ generate_test_cases(G,N) :-
   M is sqrt(N),
   C is ceil(M),
   once(
-      findnsols(N, _,
-              (   call(G), % eval & typeof
-                  %write(user_error,'ciao'),
-                	G =.. [_|ArgL], length(ArgL,AL),
-                  between(1,C,_),
-                	maplist(rand_elem,ArgL),
-                	findall(_,(nth1(I,ArgL,X), write_elem(X), (I<AL -> write(',') ; true)),_)
-                  , nl
-            )
-        , _ )
+    findnsols(N, _, (
+      call(G), % eval & typeof
+      G =.. [_|ArgL], length(ArgL,AL),
+      between(1,C,_),
+      maplist(rand_elem,ArgL),
+      findall(_,(nth1(I,ArgL,X), write_elem(X), (I<AL -> write(',') ; true)),_)
+      ,nl ),
+    _)
   ).
 
 
-
-
-
-%%%% Random element generation
-
+%% Random element generation
 rand_elem(X) :- ground(X), !.
 rand_elem(lit(int,X)) :- rand_int(X).
 rand_elem(lit(float,X)) :- rand_float(X).
-%rand_elem(lit(atom,X)) :-  TODO ++++
+%TODO: rand_elem(lit(atom,X))
 
 rand_elem(nil).
 rand_elem(cons(X,L)) :-
@@ -170,7 +164,7 @@ run :-
   prolog_flag(argv,ArgV),
   ArgV = [Example,Prop,NS],
   consult(Example),
-  current_predicate(Prop/Arity),
+  ( current_predicate(Prop/Arity) -> true ; halt(42) ),
   functor(CallA,Prop,Arity),
   atom_number(NS,N),
   gtime(
