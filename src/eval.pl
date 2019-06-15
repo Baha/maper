@@ -30,17 +30,16 @@ user:file_search_path(maper_src,'src').
 %% loads mod and evaluates fun (from mod)
 run_prog(Mod,(Fun,Arity),Args,FExp) :-
   retractall(user:fundef(_,_,_)),
-  atom_concat('../tests/',Mod,File),
-  consult(File),
+  user:consult(Mod),
   run(Mod,Fun/Arity,Args,FExp).
 
 %% eval(mod,fun,args,final_env,final_exp)
 %% evaluates fun (from mod) application and
 %% returns the final environment and expression
 run(Mod,Fun/Arity,Args,FExp) :-
-  user:fundef(lit(atom,Mod),var(Fun,Arity),fun(Pars,_)),
+  user:fundef(lit(atom,Mod),fname(Fun,Arity),fun(Pars,_)),
   zip_binds(Pars,Args,Env),
-  eval(apply(var(Fun,Arity),Pars),Env,FExp).
+  eval(apply(fname(Fun,Arity),Pars),Env,FExp).
 
 %% (Error) ---------------------------------------------------------------------
 eval(error(Reason),_Env,error(Reason)).
@@ -62,6 +61,9 @@ eval(nil,_Env,nil).
 eval(cons(Exp,Exps),Env,cons(FExp,FExps)) :-
   eval(Exp,Env,FExp),
   eval(Exps,Env,FExps).
+%% (AnonF)
+eval(fun(Args,Body),Env,fun(Args,FBody)) :-
+  replace_free_vars(Body,Env,FBody).
 
 % evaluate a list of expressions
 eval_list([],_Env,[]).
@@ -141,12 +143,19 @@ vars2cond([V|Vs], ( nonvar(V) , Cond ) ) :-
 
 %% (Apply) ---------------------------------------------------------------------
 eval(apply(FName,IExps),Env,Exp) :-
-  % TODO: Pass module here
-  user:fundef(lit(atom,_Module),FName,fun(Pars,FunBody)),
+  FName = fname(_,_), % named function
+  % retrieve function definition (%TODO: Pass module here)
+  user:fundef(lit(atom,_Module),FName,fun(Pars,FunBody)), 
   eval_list(IExps,Env,FExps),
   zip_binds(Pars,FExps,AppBinds),
   constrain_final_exp(FName,Exp),
   eval(FunBody,AppBinds,Exp).
+eval(apply(AnonF,IExps),Env,Exp) :-
+  AnonF = var(Var), % anonymous function
+  % retrieve function definition from evn
+  memberchk((Var,fun(Pars,FunBody)),Env),
+  length(Pars,N), length(IExps,M),
+  apply_anonf_cont(N,M,Pars,FunBody,IExps,Env,Exp).  
 % eval utility predicate to add some constraints on the output expression
 :- dynamic user:spec/2.
 constrain_final_exp(Fun,Exp) :-
@@ -158,8 +167,14 @@ constrain_final_exp(Fun,Exp) :-
   !,
   typeof(Exp,OutSpec).
 constrain_final_exp(_Fun,_Exp).
-%
-
+% anonymous function utility predicate
+apply_anonf_cont(N,M,Pars,FunBody,IExps,Env,Exp) :-
+  M == N,
+  eval_list(IExps,Env,FExps),
+  zip_binds(Pars,FExps,AppBinds),
+  eval(FunBody,AppBinds,Exp).
+apply_anonf_cont(N,M,_Fun,_IExps,_Env,error(badarith(anonfun,N,M))) :-
+  M \== N.
 %% (Call) ----------------------------------------------------------------------
 eval(call(lit(atom,erlang),lit(atom,Name),IExps),Env,Exp) :-
   call_cont(Name,IExps,Env,Exp).

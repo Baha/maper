@@ -161,7 +161,7 @@ if [ -e $GEN_CFG ]; then
   rm $GEN_CFG
 fi
 
-./scripts/pbgen.sh ${1%%.erl} "gen_"$2 $DEFAULT_NUM_TESTS > pbgen_data.txt
+./scripts/pbgen.sh ${1%%.erl} "gen_$2" $DEFAULT_NUM_TESTS > pbgen_data.txt
 if [[ $? == 42 ]]; then
   echo $2 "does not exist."
   clean_up

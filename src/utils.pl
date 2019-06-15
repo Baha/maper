@@ -27,3 +27,27 @@ rsel(X,L) :- random_select(E,L,R), rsel_(X,[E|R]).
 % rsel utility predicate
 rsel_(X,[X|_]).
 rsel_(X,[_|R]) :- rsel(X,R).
+
+% MODE: replace_free_vars(+Term0,+Env,-Term1)
+% SEMANTICS: Term1 is obtained from Term0 by replacing all
+% occurrences of var(Name) with Val if (Name,Val) belongs to Env
+replace_free_vars(Term, _, Term) :-
+  var(Term), % Prolog variable
+ !.
+replace_free_vars(Term0,Env, Term1) :-
+  Term0 = var(Name), % Erlang Variable
+  memberchk((Name,Val),Env),
+  !,
+  Term1 = Val.
+replace_free_vars(Term0,_, Term1) :-
+  Term0 == [],
+  !,
+  Term1 = Term0.
+replace_free_vars([Term|Terms],Env, [Term1|Terms1]) :-
+  replace_free_vars(Term,Env, Term1),
+  !,
+  replace_free_vars(Terms,Env, Terms1).
+replace_free_vars(Term0,Env, Term1) :-
+  Term0 =..[Funct|Args0],
+  replace_free_vars(Args0,Env, Args1),
+  Term1 =..[Funct|Args1].

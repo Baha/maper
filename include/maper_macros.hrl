@@ -16,6 +16,7 @@
 -define(FUN_ATOM,    "fun").
 -define(LIT_ATOM,    "lit").
 -define(VAR_ATOM,    "var").
+-define(FNAME_ATOM,  "fname").
 -define(CONS_ATOM,   "cons").
 -define(TUPLE_ATOM,  "tuple").
 -define(SEQ_ATOM,    "seq").
@@ -63,6 +64,11 @@
 
 -define(VAR_PRED_PAIR(Atom, Int),
   ?VAR_ATOM ++ ?ARG_START ++
+  ?SQUOTE_START ++ Atom ++ ?SQUOTE_END ++ ?ARG_SEP ++
+  Int ++ ?ARG_END).
+
+-define(VAR_FNAME_PAIR(Atom, Int),
+  ?FNAME_ATOM ++ ?ARG_START ++
   ?SQUOTE_START ++ Atom ++ ?SQUOTE_END ++ ?ARG_SEP ++
   Int ++ ?ARG_END).
 

@@ -78,10 +78,14 @@ cerl2fact(Node) ->
     var ->
       CoreVarName = cerl:var_name(Node),
       case CoreVarName of
+        % Names on the form {A, N} represent function name variables "A/N";
+        % these are special variables which may be bound only in the function
+        % definitions of a module or a letrec.
         {ErlAtom,ErlInt} ->
           FactAtom = atom_to_list(ErlAtom),
           FactInt  = integer_to_list(ErlInt),
-          ?VAR_PRED_PAIR(FactAtom,FactInt);
+          %?VAR_PRED_PAIR(FactAtom,FactInt);
+          ?VAR_FNAME_PAIR(FactAtom,FactInt);
         _ ->
           FactVarName = atom_to_list(CoreVarName),
           ?VAR_PRED(FactVarName)
