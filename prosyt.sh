@@ -6,8 +6,12 @@
 GEN_CFG="gen_cfg.pl"
 DEFAULT_NUM_TESTS=100
 verbose=false
+test=true
+prefix="cg"
 
 SPATH="$(dirname $(readlink -f $0))"
+
+trap "clean_up" SIGINT
 
 function clean_up()
 {
@@ -75,8 +79,8 @@ function print_help()
 # '::' (two consequent colon character) tells that the option has an optional argument.
 # ------------------------------------------------------------------------------
 ARGS=$(getopt -o h -a \
-     --long "max-size:,min-size:,tests:,inf:,sup:,force-spec,help,verbose"\
-     -n "$0" -- "$@");
+     --long "max-size:,min-size:,tests:,inf:,sup:,force-spec,generation-only,\
+             generate-and-constrain,help,verbose" -n "$0" -- "$@");
 
 if [ $? -ne 0 ]; then
   printf "Try \`%s --help' for more information.\n" $0
@@ -126,6 +130,17 @@ while true; do
     echo ":- eval:assert(eval_option(use_spec))." >> "$GEN_CFG"
     shift
   ;;
+
+  --generation-only)
+    test=false
+    shift
+  ;;
+
+  --generate-and-constrain)
+    prefix="gc"
+    shift
+  ;;
+
   --verbose)
     verbose=true
     shift
@@ -161,23 +176,27 @@ if [ -e $GEN_CFG ]; then
   rm $GEN_CFG
 fi
 
-./scripts/pbgen.sh ${1%%.erl} "gen_$2" $DEFAULT_NUM_TESTS > pbgen_data.txt
+./scripts/pbgen.sh ${1%%.erl} "${prefix}_$2" $DEFAULT_NUM_TESTS > pbgen_data.txt
 if [[ $? == 42 ]]; then
   echo $2 "does not exist."
   clean_up
   exit 1
 fi
 
-printf "\nTests Results: "
-cat pbgen_data.txt | /usr/bin/time -f "%U" -a -o timings.txt ./scripts/erl_tester.sh ${1%%.erl} $2
+if $test; then
+  printf "\nTests Results: "
+  cat pbgen_data.txt | /usr/bin/time -f "%U" -a -o timings.txt ./scripts/erl_tester.sh ${1%%.erl} $2
+fi
 
 if $verbose; then
   printf "\nTimings (ms)\n"
   printf "%-16s | %s\n" "erl2clp" $(sed -n '1p' timings.txt)
   printf "%-16s | %s\n" "tests generation" $(sed -n '2p' timings.txt)
-  printf "%-16s | %s\n" "testing" $(sed -n '3p' timings.txt)
+  if $test; then
+    printf "%-16s | %s\n" "testing" $(sed -n '3p' timings.txt)
+  fi
   rm timings.txt
 fi
 
 BASENAME=${1##*/}
-rm ${BASENAME%%.erl}.beam
+rm -f ${BASENAME%%.erl}.beam

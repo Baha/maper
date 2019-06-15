@@ -160,7 +160,7 @@ eval(apply(AnonF,IExps),Env,Exp) :-
 :- dynamic user:spec/2.
 constrain_final_exp(Fun,Exp) :-
   eval_option(use_spec),
-  Fun = var(FName,Arity),
+  Fun = fname(FName,Arity),
   functor(Function,FName,Arity),
   user:spec(Function,OutSpec),
   memberchk(OutSpec,[non_neg_integer,pos_integer,neg_integer]),
@@ -183,7 +183,7 @@ eval(call(lit(atom,Module),lit(atom,Name),IExps),Env,Exp) :-
   Module \== erlang,
   user:ensure_loaded(erlang_module(Module)),
   length(IExps,Arity),
-  eval(apply(var(Name,Arity),IExps),Env, Exp).
+  eval(apply(fname(Name,Arity),IExps),Env, Exp).
 %
 call_cont(Name,IExps,Env,Exp) :-
   erlang:bif_pred(Name/Arity),

@@ -131,19 +131,22 @@ generate_clauses(Fun) ->
     end,
   ZipVT = zip_vars_types(Vars, [Types]),
   HeadStr  = pp_head(GenName, ZipVT),
-  TypesStr = pp_vars_types(ZipVT),
+  CGTypesStr = pp_vars_types(ZipVT,"cg_"),
+  GCTypesStr = pp_vars_types(ZipVT,"gc_"),
   EvalStr = "eval(\n    " ++
     pp_propfun(PropFun) ++ ",\n    " ++
     pp_var_list(ZipVT)  ++ ",\n    " ++
     pp_prop_exp(PropType) ++"\n  )",
-  PpStr =
+  { CGPpStr, GCPpStr } =
     case PropType of
       forall ->
-        HeadStr ++ TypesStr ++ ",\n  " ++ "prop_" ++ EvalStr;
+        { "cg_" ++ HeadStr ++ CGTypesStr ++ ",\n  " ++ "prop_" ++ EvalStr,
+          "gc_" ++ HeadStr ++ GCTypesStr ++ ",\n  " ++ "prop_" ++ EvalStr };
       _ ->
-        HeadStr ++ EvalStr ++ ",\n  " ++ TypesStr
+        { "cg_" ++ HeadStr ++ EvalStr ++ ",\n  " ++ CGTypesStr,
+          "gc_" ++ HeadStr ++ GCTypesStr ++ ",\n  " ++ EvalStr }
     end,
-  io:format("~s.~n~n", [PpStr]).
+  io:format("~s.~n~n~s.~n~n", [CGPpStr, GCPpStr]). 
 
 get_vars({'fun',_,{clauses,Clauses}}) ->
   FirstClause = hd(Clauses),
@@ -164,8 +167,7 @@ zip_vars_types([V|RVars],[T|RTypes]) ->
 pp_head(GenName, VarsTypes) ->
   VarsStr = [pp_var(V) || {V,_} <- VarsTypes],
   JointStr = string:join(VarsStr, ","),
-  %HeadStr = "gen_" ++ GenName ++ "((" ++ JointStr ++ ")) :-\n  ",
-  HeadStr = "gen_" ++ GenName ++ "(" ++ JointStr ++ ") :-\n  ",
+  HeadStr = GenName ++ "(" ++ JointStr ++ ") :-\n  ",
   HeadStr.
 
 pp_var(ConsVars = {cons,_,_,_}) ->
@@ -199,11 +201,11 @@ pp_prop_exp(user_cons) -> "lit(atom,true)";
 pp_prop_exp(user_bind) -> "lit(atom,true)";
 pp_prop_exp(_) -> "lit(atom,_Res)".
 
-pp_vars_types(VarsTypes) ->
-  TypeofStr = [pp_vt(V,T) || {V,T} <- VarsTypes],
+pp_vars_types(VarsTypes,Prefix) ->
+  TypeofStr = [pp_vt(V,T,Prefix) || {V,T} <- VarsTypes],
   string:join(TypeofStr, ",\n  ").
 
-pp_vt({var,_,Var}, {call,_,{atom,_,CName},Args}) ->
+pp_vt({var,_,Var}, {call,_,{atom,_,CName},Args},Prefix) ->
   VarStr = atom_to_list(Var),
   CallStr = atom_to_list(CName),
   case is_predef(CName) of
@@ -216,16 +218,15 @@ pp_vt({var,_,Var}, {call,_,{atom,_,CName},Args}) ->
       FullStr = "typeof(" ++ VarStr ++ "," ++ CallStr ++ ArgsStr ++ ")",
       FullStr;
     false ->
-      Str = "gen_" ++ CallStr ++ "(" ++ VarStr ++ ")",
+      Str = Prefix ++ CallStr ++ "(" ++ VarStr ++ ")",
       Str
   end;
 
 % Args will be empty in this case
-pp_vt(Vars,{call,_,{atom,_,CName},_Args}) ->
+pp_vt(Vars,{call,_,{atom,_,CName},_Args},Prefix) ->
   CallStr = atom_to_list(CName),
   ArgsStr = "(" ++ pp_var(Vars) ++ ")",
-  %GenStr = "gen_" ++ CallStr ++ "(" ++ ArgsStr ++ ")",
-  GenStr = "gen_" ++ CallStr ++ ArgsStr,
+  GenStr = Prefix ++ CallStr ++ ArgsStr,
   GenStr.
 
 % is_predef determines if type is predef or user-defined
@@ -311,4 +312,4 @@ pp_propfun({tuple,_,TupleEs}) ->
 pp_propfun(_) -> "_".
 
 pp_propfun({atom,_,Atom}, NArgs) ->
-  "var('" ++ atom_to_list(Atom) ++ "'," ++ integer_to_list(NArgs) ++ ")".
+  "fname('" ++ atom_to_list(Atom) ++ "'," ++ integer_to_list(NArgs) ++ ")".
