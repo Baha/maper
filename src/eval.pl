@@ -13,6 +13,8 @@ user:file_search_path(erlang_module,ModulesDir) :-
   user:file_search_path(maper_src,Base),
   atom_concat(Base, '/modules',ModulesDir).
 user:file_search_path(maper_src,'src').
+user:file_search_path(test,'examples').
+user:file_search_path(test,'tests').
 
 :- use_module(library(lists)).
 :- use_module(library(terms)).
@@ -30,7 +32,7 @@ user:file_search_path(maper_src,'src').
 %% loads mod and evaluates fun (from mod)
 run_prog(Mod,(Fun,Arity),Args,FExp) :-
   retractall(user:fundef(_,_,_)),
-  user:consult(Mod),
+  user:consult(test(Mod)),
   run(Mod,Fun/Arity,Args,FExp).
 
 %% eval(mod,fun,args,final_env,final_exp)
@@ -145,7 +147,7 @@ vars2cond([V|Vs], ( nonvar(V) , Cond ) ) :-
 eval(apply(FName,IExps),Env,Exp) :-
   FName = fname(_,_), % named function
   % retrieve function definition (%TODO: Pass module here)
-  user:fundef(lit(atom,_Module),FName,fun(Pars,FunBody)), 
+  user:fundef(lit(atom,_Module),FName,fun(Pars,FunBody)),
   eval_list(IExps,Env,FExps),
   zip_binds(Pars,FExps,AppBinds),
   constrain_final_exp(FName,Exp),
@@ -155,7 +157,7 @@ eval(apply(AnonF,IExps),Env,Exp) :-
   % retrieve function definition from evn
   memberchk((Var,fun(Pars,FunBody)),Env),
   length(Pars,N), length(IExps,M),
-  apply_anonf_cont(N,M,Pars,FunBody,IExps,Env,Exp).  
+  apply_anonf_cont(N,M,Pars,FunBody,IExps,Env,Exp).
 % eval utility predicate to add some constraints on the output expression
 :- dynamic user:spec/2.
 constrain_final_exp(Fun,Exp) :-
