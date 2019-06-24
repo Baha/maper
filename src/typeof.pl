@@ -142,6 +142,7 @@ proper_type_to_prolog(number,0,number_) :- !.
 proper_type_to_prolog(atom,0,atom_) :- !.
 proper_type_to_prolog(list,1,list_) :- !.
 proper_type_to_prolog(union,1,union_) :- !.
+proper_type_to_prolog(weighted_union,1,weighted_union_) :- !.
 proper_type_to_prolog(F,_,F).
 
 % TODO: use goal_expansion?
@@ -262,6 +263,21 @@ member_random(X,L) :-
 	(X=Y; member_random(X,Rest)).
 
 
+member_random_freq(X,[{_F,X}]) :- !.
+member_random_freq(X,ListOfFreqTypes) :-
+	foldl(freq_sum,ListOfFreqTypes,{0,_},{FreqSum,_}),
+	random_between(1,FreqSum,R),
+	member_freq({_,X},ListOfFreqTypes,R).
+
+freq_sum({A,_}, {B,_}, {S,_}) :- S is A + B.
+
+member_freq({F,X},[{F1,X1}| _ ],R) :-
+	R =< F1, !, {F,X} = {F1,X1}.
+member_freq({F,X},[{F1,_}| ListOfFreqTypes],R) :-
+		R > F1, !,
+		R1 is R-F1,
+		member_freq({F,X},ListOfFreqTypes,R1).
+
 
 
 size(N) :-
@@ -317,13 +333,22 @@ llength(cons(_,Xs),L) :- clpq:{L1>=0, L=1+L1}, llength(Xs,L1).
 union_(X,ListOfTypes,S) :-
 	ListOfTypes \== [],
 	( (config(random_union) ) ->
-		% use nondet random member selection based on random_member/2
 			member_random(T,ListOfTypes)
 		;
   		member(T,ListOfTypes)
 	),
   typeof_(X,T,S).
 
+	% ------------------------------------------------------------------------------
+	% weighted_union_(Values,FreqTypesLst,Size)
+	weighted_union_(X,ListOfFreqTypes,S) :-
+		ListOfFreqTypes \== [],
+		( (config(random_union) ) ->
+				member_random_freq(T,ListOfFreqTypes)
+			;
+	  		member({_,T},ListOfFreqTypes)
+		),
+	  typeof_(X,T,S).
 
 
 % ------------------------------------------------------------------------------
@@ -411,7 +436,7 @@ is_userdef_type(T) :- typedef(T,_).
 
 
 builtin_type_pred(P) :-
-	member(P,[integer, float, list, fixed_list, vector, union,
+	member(P,[integer, float, list, fixed_list, vector, union, weighted_union,
 		tuple, loose_tuple, exactly, non_empty]).
 builtin_type_pred(P) :- alias_type_pred(P).
 

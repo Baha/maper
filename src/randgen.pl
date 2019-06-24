@@ -9,19 +9,22 @@
 % ------------------------------------------------------------------------------
 % lit(int,X)
 % ------------------------------------------------------------------------------
-:- set_config(int_sup(1000)).
-:- set_config(int_inf(-1000)).
+:- assert(int_sup(1000)).
+:- assert(int_inf(-1000)).
+
+
+
 
 int_sup(X,SupX) :- fd_sup(X,S),
 		(S==sup ->
-			config(int_sup(SupX))
+			int_sup(SupX)
 			;
 			SupX=S
 		).
 
 int_inf(X,InfX) :- fd_inf(X,I),
 		(I==inf ->
-			config(int_inf(InfX))
+			int_inf(InfX)
 			;
 			InfX=I
 		).
