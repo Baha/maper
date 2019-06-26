@@ -31,11 +31,9 @@ int_inf(X,InfX) :- fd_inf(X,I),
 
 
 rand_int(X) :-
-		int_inf(X,Inf),
-		int_sup(X,Sup),
-		random_between(Inf,Sup,X).
-
-
+  fd_sup(X,Sup),
+  fd_inf(X,Inf),
+  random_between(Inf,Sup,X).
 
 % ------------------------------------------------------------------------------
 % lit(float,X)
@@ -81,6 +79,7 @@ generate_test_cases(G,N) :-
     findnsols(N, _, (
       call(G), % eval & typeof
       G =.. [_|ArgL], length(ArgL,AL),
+      fd_vars_doms(ArgL),
       between(1,C,_),
       maplist(rand_elem,ArgL),
       findall(_,(nth1(I,ArgL,X), write_elem(X), (I<AL -> write(',') ; true)),_)
@@ -88,6 +87,28 @@ generate_test_cases(G,N) :-
     _)
   ).
 
+%%
+fd_vars_doms(ArgL) :-
+  fd_vars(ArgL,[],Vars),
+  config(int_inf(I)),
+  config(int_sup(S)),
+  Vars ins I..S.
+
+%% fd_vars returs the FD variables occurring int a term
+fd_vars([],Vars, Vars).
+fd_vars([H|T],VarsIn, VarsOut) :-
+  fd_vars(H,VarsIn, VarsIn1),
+  fd_vars(T,VarsIn1, VarsOut).
+fd_vars(lit(int,X),Vars, [X|Vars]) :-
+  var(X).
+fd_vars(lit(float,_),Vars, Vars).
+fd_vars(lit(atom,_),Vars, Vars).
+fd_vars(nil,Vars, Vars).
+fd_vars(cons(H,T),VarsIn, VarsOut) :-
+  fd_vars(H,VarsIn, VarsIn1),
+  fd_vars(T,VarsIn1, VarsOut).
+fd_vars(tuple(E),VarsIn, VarsOut) :-
+  fd_vars(E,VarsIn, VarsOut).
 
 %% Random element generation
 rand_elem(X) :- ground(X), !.

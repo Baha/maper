@@ -8,6 +8,7 @@ DEFAULT_NUM_TESTS=100
 verbose=false
 test=true
 prefix="cg"
+gto=false
 
 SPATH="$(dirname $(readlink -f $0))"
 
@@ -80,7 +81,7 @@ function print_help()
 # ------------------------------------------------------------------------------
 ARGS=$(getopt -o h -a \
      --long "max-size:,min-size:,tests:,inf:,sup:,force-spec,generation-only,\
-             generate-and-constrain,help,verbose" -n "$0" -- "$@");
+             generate-and-constrain,generation-timeout:,help,verbose" -n "$0" -- "$@");
 
 if [ $? -ne 0 ]; then
   printf "Try \`%s --help' for more information.\n" $0
@@ -105,7 +106,7 @@ while true; do
     shift 2
   ;;
   --min-size)
-    echo ":- set_config(start_size($2))." >> "$GEN_CFG"
+    echo ":- set_config(min_size($2))." >> "$GEN_CFG"
     shift 2
   ;;
   --inf)
@@ -139,6 +140,12 @@ while true; do
   --generate-and-constrain)
     prefix="gc"
     shift
+  ;;
+
+  --generation-timeout)
+    gto=true
+    to=$2
+    shift 2
   ;;
 
   --verbose)
@@ -176,11 +183,18 @@ if [ -e $GEN_CFG ]; then
   rm $GEN_CFG
 fi
 
-./scripts/pbgen.sh ${1%%.erl} "${prefix}_$2" $DEFAULT_NUM_TESTS > pbgen_data.txt
-if [[ $? == 42 ]]; then
-  echo $2 "does not exist."
-  clean_up
-  exit 1
+if $gto; then
+  ./scripts/cmdrunner "./scripts/pbgen.sh ${1%%.erl} ${prefix}_$2 $DEFAULT_NUM_TESTS > pbgen_data.txt" $to
+  if [[ $? == 143 ]]; then
+    echo $to | awk '{printf "%.2f\n",$1*1000}' >> timings.txt
+  fi
+else
+  ./scripts/pbgen.sh ${1%%.erl} "${prefix}_$2" $DEFAULT_NUM_TESTS > pbgen_data.txt
+  if [[ $? == 42 ]]; then
+    echo $2 "does not exist."
+    clean_up
+    exit 1
+  fi
 fi
 
 if $test; then
@@ -188,10 +202,11 @@ if $test; then
   cat pbgen_data.txt | /usr/bin/time -f "%U" -a -o timings.txt ./scripts/erl_tester.sh ${1%%.erl} $2
 fi
 
-if $verbose; then
+if [ $verbose -a -e timings.txt ]; then
   printf "\nTimings (ms)\n"
   printf "%-16s | %s\n" "erl2clp" $(sed -n '1p' timings.txt)
-  printf "%-16s | %s\n" "tests generation" $(sed -n '2p' timings.txt)
+  printf "%-16s | %s (test cases generated: %s out of %s)\n" "tests generation"\
+  $(sed -n '2p' timings.txt) $(wc -l < pbgen_data.txt) $DEFAULT_NUM_TESTS
   if $test; then
     printf "%-16s | %s\n" "testing" $(sed -n '3p' timings.txt)
   fi
