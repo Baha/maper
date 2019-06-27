@@ -12,24 +12,6 @@
 :- set_config(int_sup(1000)).
 :- set_config(int_inf(-1000)).
 
-
-
-
-int_sup(X,SupX) :- fd_sup(X,S),
-		(S==sup ->
-			config(int_sup(SupX))
-			;
-			SupX=S
-		).
-
-int_inf(X,InfX) :- fd_inf(X,I),
-		(I==inf ->
-			config(int_inf(InfX))
-			;
-			InfX=I
-		).
-
-
 rand_int(X) :-
   fd_sup(X,Sup),
   fd_inf(X,Inf),
@@ -39,8 +21,12 @@ rand_int(X) :-
 % lit(float,X)
 % ------------------------------------------------------------------------------
 
-float_sup(Sup) :- config(int_sup(Sup1)), Sup is Sup1 + 0.000000000001.
-float_inf(Inf) :- float_sup(Sup), Inf is -Sup.
+float_sup(Sup) :-
+  config(int_sup(Sup1)),
+  Sup is Sup1 + 0.000000000001.
+float_inf(Inf) :-
+  float_sup(Sup),
+  Inf is -Sup.
 
 float_sup(X,SupX) :-
 		(sup(X,S) ->

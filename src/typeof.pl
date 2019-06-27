@@ -1,66 +1,37 @@
 :- use_module(library(clpfd)).
 :- use_module(library(clpr)).
+:- multifile typedef/2.
+
+:- dynamic min_size/1, max_size/1.
+min_size(0).  % was X is 1
+max_size(42).
 
 :- dynamic config/1.
-
 unset_config(X) :-
-	 	X =.. [F|As],
-		length(As,N),
-		length(DontCare,N),
-		X1 =.. [F|DontCare],
-		retractall(config(X1)).
+  X =.. [F|As],
+  length(As,N),
+  length(DontCare,N),
+  X1 =.. [F|DontCare],
+  retractall(config(X1)).
 
+set_config(max_size(X)) :-
+  !,
+  retractall(max_size(_)),
+  assertz(max_size(X)).
+set_config(min_size(X)) :-
+  !,
+  retractall(min_size(_)),
+  assertz(min_size(X)).
 set_config(C) :-
-	unset_config(C),
-	assertz(config(C)).
-
+  unset_config(C),
+  assertz(config(C)).
 % :- set_config(random_tuple).
 
 show_config :-
-	findall(X, (config(X),write(X),nl), _).
+  findall(X, (config(X),write(X),nl), _).
 
-% admissible values for C
-% start_size(X)
-% max_size(X)
-% random_size(any)
-% random_size(all)
-% random_tuple
-% random_union
-
-
-% set_config(start_size(X)) :-
-% 	retractall(config(start_size(_))),
-% 	assertz(config(start_size(X))).
-%
-% set_config(max_size(X)) :-
-% 	retractall(config(max_size(_))),
-% 	assertz(config(max_size(X))).
-%
-% set_config(random_size) :-
-% 	retractall(config(random_size)),
-% 	assertz(config(random_size)).
-%
-% set_config(random_tuple) :-
-% 	retractall(config(random_tuple)),
-% 	assertz(config(random_tuple)).
-%
-% set_config(random_union) :-
-% 	retractall(config(random_union)),
-% 	assertz(config(random_union)).
-
-
-start_size(X) :-
-	(config(start_size(Y)) -> X=Y ; X is 0). % was X is 1
-max_size(X) :-
-	(config(max_size(Y)) -> X=Y ; X is 42).
-
-
-
-:- multifile typedef/2.
-
-
-% % ------------------------------------------------------------------------------
-% % X is of type T
+%% -----------------------------------------------------------------------------
+%% X is of type T
 typeof(X,T) :-
 	member(T,[integer,float,atom,non_neg_integer,pos_integer,neg_integer,range,non_neg_float,number, boolean, byte]),
 	!,
@@ -70,7 +41,7 @@ typeof(X,T) :-
 typeof(X,T) :-
 	config(random_size(any)),
 	!,
-	start_size(StartS),
+	min_size(StartS),
 	max_size(MaxS),
 	N is MaxS-StartS+1,
 	repeat(N),
@@ -80,7 +51,7 @@ typeof(X,T) :-
 typeof(X,T) :-
 	config(random_size(all)),
 	!,
-	start_size(StartS),
+	min_size(StartS),
 	max_size(MaxS),
 	random_between_all2(StartS,MaxS,S),
 	typeof_(X,T,S).
@@ -106,16 +77,10 @@ typeof_(X,T,S) :-
 
 
 typeof_(X,T,S) :-
-%  typedef(T,D),
   typedef_union(T,D),
-	typeof_(X,D,S).
-
+  typeof_(X,D,S).
+%
 typedef_union(T,union(L)) :- findall(D,typedef(T,D),L), L \==[].
-
-%typedef(tree(_T),exactly(lit(atom,leaf))).
-%typedef(tree(T),tuple([exactly(lit(atom,node)),T,tree(T),tree(T)])).
-
-
 
 %
 sizeof(X,S) :-
@@ -227,7 +192,7 @@ non_empty(X,T,S) :-
 %  list(Xs,T).
 
 random_size(N) :-
-	start_size(MinL),
+	min_size(MinL),
 	max_size(MaxL),
 	random_between(MinL,MaxL,N).
 
@@ -281,11 +246,10 @@ member_freq({F,X},[{F1,_}| ListOfFreqTypes],R) :-
 
 
 size(N) :-
-  	start_size(MinL),
-  	max_size(MaxL),
-    % MinL #=< N, N #=< MaxL
-		{MinL =< N, N =< MaxL}
-		.
+  min_size(MinL),
+  max_size(MaxL),
+  % MinL #=< N, N #=< MaxL
+  {MinL =< N, N =< MaxL}.
 
 
 % list(nil,_).
