@@ -87,6 +87,8 @@ fd_vars([H|T],VarsIn, VarsOut) :-
   fd_vars(T,VarsIn1, VarsOut).
 fd_vars(lit(int,X),Vars, [X|Vars]) :-
   var(X).
+fd_vars(lit(int,X),Vars, Vars) :-
+  ground(X).
 fd_vars(lit(float,_),Vars, Vars).
 fd_vars(lit(atom,_),Vars, Vars).
 fd_vars(nil,Vars, Vars).
