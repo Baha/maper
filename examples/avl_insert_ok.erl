@@ -113,9 +113,13 @@ left_rotate({node, L,V,{node, RL,RV,RR}}) -> {node, {node, L,V,RL},RV,RR}.
 avl_tree() ->
   ?SUCHTHAT(Tree, tree(integer()), bbst(Tree)).
 % adding an element Elem to any AVL tree, produces an AVL tree
-prop_insert() ->
+prop_tbt() ->
   ?FORALL({Elem,Tree}, {integer(),avl_tree()}, bbst(insert(Elem,Tree))).
 
+% the following declaration is added to avoid the erlang compiler error:
+%   ./examples/avl_insert_ok.erl:114: function tree/1 undefined
+% due to the use tree(integer()) in the ?SUCHTHAT macro
+% It is not used in the generation process.
 tree(G) ->
   union([
     'leaf',

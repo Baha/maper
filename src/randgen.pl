@@ -11,6 +11,7 @@
 % ------------------------------------------------------------------------------
 :- set_config(int_sup(1000)).
 :- set_config(int_inf(-1000)).
+:- set_config(skeleton_instances(1500)).
 
 rand_int(X) :-
   fd_sup(X,Sup),
@@ -59,8 +60,7 @@ rand_float(X) :-
 
 % generate, instantiate and write N instances of G
 generate_test_cases(G,N) :-
-  M is sqrt(N),
-  C is ceil(M),
+  config(skeleton_instances(C)),
   once(
     findnsols(N, _, (
       call(G), % eval & typeof

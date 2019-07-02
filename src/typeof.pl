@@ -33,7 +33,10 @@ show_config :-
 %% -----------------------------------------------------------------------------
 %% X is of type T
 typeof(X,T) :-
-	member(T,[integer,float,atom,non_neg_integer,pos_integer,neg_integer,range,non_neg_float,number, boolean, byte]),
+  member(T,[
+    integer,non_neg_integer,pos_integer,neg_integer,range,
+    float,non_neg_float,number,boolean,byte,atom,
+    integer(_,_),float(_,_)]),
 	!,
 	{S=0},
 	typeof_(X,T,S).

@@ -21,5 +21,5 @@ insert(I,L) ->
 ordered_list() ->
   ?SUCHTHAT(L, non_empty(list(integer())), ordered(L)).
 
-prop_ordered_insert() ->
+prop_tbt() ->
   ?FORALL({E,L}, { integer(), ordered_list() }, ordered(insert(E,L))).

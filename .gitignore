@@ -3,3 +3,8 @@
 proper/*
 tests/
 src/modules/lists.erl
+examples/cg_res/*
+examples/gc_res/*
+examples/*.pl
+tmp/
+

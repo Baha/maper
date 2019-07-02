@@ -59,7 +59,21 @@ function print_help()
 
   printf " ${bold}--force-spec${normal}                                      \n"
   printf "       adds some constraints on the output expressions of functions\n"
-  printf "       as specified by their constracts                            \n"
+  printf "       as specified by their contracts                             \n"
+  printf "\n"
+
+  printf " ${bold}--symbolic_generation-and-filter${normal}                  \n"
+  printf "       executes the test cases generation process that runs the    \n"
+  printf "       (symbolic) type generator first, followed by the filter     \n"
+  printf "\n"
+
+  printf " ${bold}--generation-timeout${normal} T                            \n"
+  printf "       sets a timeout T in seconds for the generation process      \n"
+  printf "\n"
+
+  printf " ${bold}--skeleton-instances${normal} I                            \n"
+  printf "       sets the maximum number of test cases generated from        \n"
+  printf "       each symbolic answer of the filter expression               \n"
   printf "\n"
 
   printf " ${bold}--verbose${normal}                                         \n"
@@ -81,7 +95,8 @@ function print_help()
 # ------------------------------------------------------------------------------
 ARGS=$(getopt -o h -a \
      --long "max-size:,min-size:,tests:,inf:,sup:,force-spec,generation-only,\
-             generate-and-constrain,generation-timeout:,help,verbose" -n "$0" -- "$@");
+             symbolic_generation-and-filter,generation-timeout:,\
+             skeleton-instances,help,verbose" -n "$0" -- "$@");
 
 if [ $? -ne 0 ]; then
   printf "Try \`%s --help' for more information.\n" $0
@@ -137,7 +152,7 @@ while true; do
     shift
   ;;
 
-  --generate-and-constrain)
+  --symbolic_generation-and-filter)
     prefix="gc"
     shift
   ;;
@@ -145,6 +160,11 @@ while true; do
   --generation-timeout)
     gto=true
     to=$2
+    shift 2
+  ;;
+
+  --skeleton-instances)
+    echo ":- set_config(skeleton_instances($2))." >> "$GEN_CFG"
     shift 2
   ;;
 
@@ -186,7 +206,7 @@ fi
 if $gto; then
   ./scripts/cmdrunner "./scripts/pbgen.sh ${1%%.erl} ${prefix}_$2 $DEFAULT_NUM_TESTS > pbgen_data.txt" $to
   if [[ $? == 143 ]]; then
-    echo $to | awk '{printf "%.2f\n",$1*1000}' >> timings.txt
+    echo $to >> timings.txt
   fi
 else
   ./scripts/pbgen.sh ${1%%.erl} "${prefix}_$2" $DEFAULT_NUM_TESTS > pbgen_data.txt
@@ -202,8 +222,8 @@ if $test; then
   cat pbgen_data.txt | /usr/bin/time -f "%U" -a -o timings.txt ./scripts/erl_tester.sh ${1%%.erl} $2
 fi
 
-if [ $verbose -a -e timings.txt ]; then
-  printf "\nTimings (ms)\n"
+if $verbose; then
+  printf "\nTimings (s)\n"
   printf "%-16s | %s\n" "erl2clp" $(sed -n '1p' timings.txt)
   printf "%-16s | %s (test cases generated: %s out of %s)\n" "tests generation"\
   $(sed -n '2p' timings.txt) $(wc -l < pbgen_data.txt) $DEFAULT_NUM_TESTS

@@ -42,7 +42,7 @@ maper$ ./prosyt [OPTION]... SOURCE PROPERTY
 where `SOURCE` includes the program under test and the definition of `PROPERTY`.
 The ProSyT options are listed below.
 
-``` 
+```
  --tests N
      specifies the number of tests to be run (Default: 100)
  --min-size M
@@ -54,7 +54,13 @@ The ProSyT options are listed below.
  --sup S
      specifies the maximum value for the random number generator range (Default: 1000)
  --force-spec
-     adds some constraints on the output expressions of functions as specified by their constracts
+     adds some constraints on the output expressions of functions as specified by their contracts
+ --symbolic_generation-and-filter
+     executes the test cases generation process that runs the (symbolic) type generator first, followed by the filter
+ --generation-timeout T
+     sets a timeout T in seconds for the generation process
+ --skeleton-instances I
+     sets the maximum number of test cases generated from each symbolic answer of the filter expression 
  --verbose
      prints statistics about timings
       - 'erl2clp': time required for translating from Erlang to CLP

@@ -20,7 +20,7 @@ ord_insert(I,[X|Xs]) ->
 ordered_list() ->
   ?SUCHTHAT(List, non_empty(list(integer())), is_ordered(List)).
 
-prop_ordered_insert() ->
+prop_tbt() ->
   ?FORALL( {Elem,List}, { integer(), ordered_list() },
     is_ordered(ord_insert(Elem,List))
   ).
