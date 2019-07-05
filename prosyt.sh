@@ -96,7 +96,7 @@ function print_help()
 ARGS=$(getopt -o h -a \
      --long "max-size:,min-size:,tests:,inf:,sup:,force-spec,generation-only,\
              symbolic_generation-and-filter,generation-timeout:,\
-             skeleton-instances,help,verbose" -n "$0" -- "$@");
+             skeleton-instances:,help,verbose" -n "$0" -- "$@");
 
 if [ $? -ne 0 ]; then
   printf "Try \`%s --help' for more information.\n" $0

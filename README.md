@@ -5,6 +5,18 @@ This branch includes the sources of ProSyT
 - [Installation](#installation)
 - [Usage](#usage)
 
+### NOTEs
+
+In order to reproduce the experiments of *Property-Based Test Case Generators for Free*, run ProSyT as follows:
+
+```shell
+maper$   ./prosyt.sh ./examples/$prog prop_tbt \
+    --inf -10000 --sup 10000 --min-size 10 --max-size 100 \
+    --tests 100000 --force-spec --verbose --generation-timeout 300
+```
+where ```$prog``` is the program under test.
+The benchmark suite of the paper is included in ```$maper/examples```.
+
 ### INSTALLATION
 
 #### Requirements
@@ -60,7 +72,7 @@ The ProSyT options are listed below.
  --generation-timeout T
      sets a timeout T in seconds for the generation process
  --skeleton-instances I
-     sets the maximum number of test cases generated from each symbolic answer of the filter expression 
+     sets the maximum number of test cases generated from each symbolic answer of the filter expression
  --verbose
      prints statistics about timings
       - 'erl2clp': time required for translating from Erlang to CLP
